@@ -1,0 +1,46 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#FFFFFF"/>
+  
+  <!-- Map book -->
+  <g transform="translate(80, 120)">
+    <!-- Left page (green gradient) -->
+    <rect x="40" y="80" width="120" height="240" fill="url(#leftGradient)"/>
+    
+    <!-- Right page (blue gradient) -->
+    <rect x="160" y="80" width="120" height="240" fill="url(#rightGradient)"/>
+    
+    <!-- Center binding -->
+    <rect x="150" y="80" width="20" height="240" fill="#1976D2"/>
+    
+    <!-- Map pin -->
+    <g transform="translate(120, 40)">
+      <!-- Pin shadow -->
+      <ellipse cx="64" cy="200" rx="40" ry="15" fill="#00000020"/>
+      
+      <!-- Pin body -->
+      <path d="M64 40 C84 40 100 56 100 80 C100 120 64 180 64 180 S28 120 28 80 C28 56 44 40 64 40 Z" fill="url(#pinGradient)"/>
+      
+      <!-- Pin center -->
+      <circle cx="64" cy="80" r="20" fill="#FFFFFF"/>
+    </g>
+  </g>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="leftGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#66BB6A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4CAF50;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="rightGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#42A5F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2196F3;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="pinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#26C6DA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00BCD4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>
