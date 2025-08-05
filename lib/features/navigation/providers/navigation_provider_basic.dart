@@ -86,7 +86,7 @@ class NavigationProvider extends ChangeNotifier {
   }
 
   /// Calcule une route entre deux points
-  Future<void> calculateRoute(LatLng start, LatLng end, {String? destinationName}) async {
+  Future<void> calculateRoute(LatLng start, LatLng end, {String? destinationName, String? transportMode}) async {
     _isCalculatingRoute = true;
     _startPoint = start;
     _endPoint = end;
@@ -210,6 +210,22 @@ class NavigationProvider extends ChangeNotifier {
     _currentSpeed = 0.0;
     _remainingDistance = 0.0;
     notifyListeners();
+  }
+
+  /// Passe à l'étape suivante de navigation
+  void moveToNextStep() {
+    if (_currentRoute != null && _currentStepIndex < _currentRoute!.steps.length - 1) {
+      _currentStepIndex++;
+      notifyListeners();
+    }
+  }
+
+  /// Retourne à l'étape précédente de navigation
+  void previousStep() {
+    if (_currentStepIndex > 0) {
+      _currentStepIndex--;
+      notifyListeners();
+    }
   }
 
   @override

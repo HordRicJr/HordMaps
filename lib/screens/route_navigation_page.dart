@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
-import '../features/navigation/providers/navigation_provider.dart';
+import '../features/navigation/providers/navigation_provider_basic.dart';
 import '../services/voice_guidance_service.dart';
 
 /// Page d'itinéraire moderne avec navigation turn-by-turn

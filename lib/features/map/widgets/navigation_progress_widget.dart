@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../services/real_time_navigation_service.dart';
-import '../../navigation/providers/navigation_provider.dart';
+import '../../navigation/providers/navigation_provider_basic.dart';
 
 /// Widget pour afficher la progression de navigation en temps réel
 class NavigationProgressWidget extends StatefulWidget {
