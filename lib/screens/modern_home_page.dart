@@ -16,7 +16,7 @@ import '../shared/services/fluid_navigation_service.dart';
 import '../services/voice_guidance_service.dart';
 import '../services/places_service.dart';
 import '../services/navigation_notification_service.dart';
-import '../services/app_lifecycle_service.dart';
+import '../services/crash_proof_location_service.dart';
 
 /// Page d'accueil moderne HordMaps
 class ModernHomePage extends StatefulWidget {
@@ -70,8 +70,7 @@ class _ModernHomePageState extends State<ModernHomePage>
         debugPrint('Erreur NavigationNotificationService: $e');
       });
 
-      await Future.delayed(const Duration(milliseconds: 100));
-      AppLifecycleService().initialize();
+      debugPrint('✅ Services de la page d\'accueil initialisés');
     } catch (e) {
       debugPrint('Erreur lors de l\'initialisation des services: $e');
     }
@@ -79,36 +78,20 @@ class _ModernHomePageState extends State<ModernHomePage>
 
   Future<void> _getCurrentLocation() async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrint('Services de localisation désactivés');
-        _generateMockNearbyPlaces();
-        return;
+      // Utiliser notre service de géolocalisation sécurisé
+      final locationService = context.read<CrashProofLocationService>();
+
+      // Obtenir la position actuelle (ne crashe jamais)
+      final position = await locationService.getCurrentPosition();
+
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+
+        // Charger les lieux à proximité
+        await _loadNearbyPlaces();
       }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          debugPrint('Permission de localisation refusée');
-          _generateMockNearbyPlaces();
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        debugPrint('Permission de localisation refusée définitivement');
-        _generateMockNearbyPlaces();
-        return;
-      }
-
-      _currentPosition = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-        ),
-      );
-
-      await _loadNearbyPlaces();
     } catch (e) {
       debugPrint('Erreur lors de la récupération de la position: $e');
       _generateMockNearbyPlaces();

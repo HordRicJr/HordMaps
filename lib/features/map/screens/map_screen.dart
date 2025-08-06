@@ -3,20 +3,14 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../shared/extensions/color_extensions.dart';
 
 import '../providers/map_provider.dart';
 import '../../search/providers/search_provider.dart';
-import '../../navigation/providers/providers.dart';
+import '../../navigation/providers/provider_navigation.dart';
 import '../../favorites/providers/favorites_provider.dart';
-import '../../../shared/widgets/animated_search_bar.dart';
-import '../../../shared/widgets/location_button.dart';
-import '../../../shared/widgets/map_controls.dart';
-import '../widgets/navigation_panel.dart';
 import '../widgets/navigation_progress_widget.dart';
-import '../../../services/navigation_notification_service.dart';
-import '../../../services/navigation_overlay_service.dart';
-import '../../../services/background_navigation_service.dart';
+import '../../../shared/widgets/animated_search_bar.dart';
+import '../widgets/navigation_panel.dart';
 import '../../../services/real_time_navigation_service.dart';
 
 class MapScreen extends StatefulWidget {
@@ -55,8 +49,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   /// Initialise les services de navigation en arrière-plan
   Future<void> _initializeNavigationServices() async {
     try {
-      await NavigationOverlayService.instance.initialize();
-      await BackgroundNavigationService.instance.initialize();
       _startNavigationListener();
     } catch (e) {
       debugPrint('Erreur initialisation services navigation: $e');
@@ -65,26 +57,25 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   /// Démarre l'écoute des mises à jour de navigation pour l'overlay
   void _startNavigationListener() {
-    final realTimeService = RealTimeNavigationService.instance;
+    try {
+      final realTimeService = RealTimeNavigationService.instance;
 
-    realTimeService.progressStream.listen((progress) {
-      if (mounted && progress.remainingDistance > 0) {
-        // Afficher l'overlay automatiquement avec les nouvelles données
-        NavigationOverlayService.instance.showNavigationOverlay(
-          context,
-          progress,
-          autoHideDuration: const Duration(seconds: 8),
-        );
-
-        // Mettre à jour l'overlay système natif (Android)
-        NavigationOverlayService.instance.showSystemOverlay(
-          title: 'Navigation HordMaps',
-          content:
-              '${progress.remainingDistance.toStringAsFixed(1)} km restants • ETA: ${_formatDuration(progress.estimatedTimeArrival)}',
-          progress: progress.completionPercentage,
-        );
-      }
-    });
+      realTimeService.progressStream.listen((progress) {
+        if (mounted && progress.remainingDistance > 0) {
+          // Afficher des notifications sur la progression
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${progress.remainingDistance.toStringAsFixed(1)} km restants • ETA: ${_formatDuration(progress.estimatedTimeArrival)}',
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      debugPrint('Erreur listener navigation: $e');
+    }
   }
 
   /// Formate une durée en chaîne lisible
@@ -124,7 +115,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 // Barre de recherche animée
                 _buildSearchBar(searchProvider, mapProvider),
 
-                // Contrôles de la carte
                 _buildMapControls(mapProvider),
 
                 // Bouton de géolocalisation
@@ -142,9 +132,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     right: 0,
                     child: NavigationProgressWidget(),
                   ),
-
-                // Bouton d'overlay flottant (si navigation active)
-                if (navProvider.isNavigating) _buildOverlayControlButton(),
 
                 // Indicateur de chargement
                 if (mapProvider.isLoading) _buildLoadingIndicator(),
@@ -216,7 +203,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         border: Border.all(color: Colors.white, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withCustomOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -243,7 +230,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         border: Border.all(color: Colors.white, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withCustomOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -271,7 +258,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         border: Border.all(color: Colors.white, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withCustomOpacity(0.3),
+                            color: Colors.blue.withValues(alpha: 0.3),
                             blurRadius: 10,
                             spreadRadius: 5,
                           ),
@@ -322,7 +309,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withCustomOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -346,22 +333,31 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return Positioned(
       right: 16,
       top: MediaQuery.of(context).size.height * 0.3,
-      child:
-          MapControls(
-                onZoomIn: () {
-                  final zoom = mapProvider.mapZoom + 1;
-                  mapProvider.mapController.move(mapProvider.mapCenter, zoom);
-                  mapProvider.updateMapPosition(mapProvider.mapCenter, zoom);
-                },
-                onZoomOut: () {
-                  final zoom = mapProvider.mapZoom - 1;
-                  mapProvider.mapController.move(mapProvider.mapCenter, zoom);
-                  mapProvider.updateMapPosition(mapProvider.mapCenter, zoom);
-                },
-              )
-              .animate()
-              .slideX(begin: 1, duration: 400.ms, curve: Curves.easeOutCubic)
-              .fadeIn(delay: 200.ms),
+      child: Column(
+        children: [
+          FloatingActionButton(
+            heroTag: "zoom_in",
+            mini: true,
+            onPressed: () {
+              final zoom = mapProvider.mapZoom + 1;
+              mapProvider.mapController.move(mapProvider.mapCenter, zoom);
+              mapProvider.updateMapPosition(mapProvider.mapCenter, zoom);
+            },
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: "zoom_out",
+            mini: true,
+            onPressed: () {
+              final zoom = mapProvider.mapZoom - 1;
+              mapProvider.mapController.move(mapProvider.mapCenter, zoom);
+              mapProvider.updateMapPosition(mapProvider.mapCenter, zoom);
+            },
+            child: const Icon(Icons.remove),
+          ),
+        ],
+      ),
     );
   }
 
@@ -369,74 +365,19 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return Positioned(
       right: 16,
       bottom: 100,
-      child:
-          LocationButton(
-                onPressed: () {
-                  mapProvider.centerOnCurrentLocation();
-                },
-                isFollowing: mapProvider.isFollowingUser,
-                onToggleFollow: () {
-                  mapProvider.toggleFollowUser();
-                },
-              )
-              .animate(controller: _fabAnimationController)
-              .scale(begin: const Offset(0, 0), delay: 100.ms)
-              .fadeIn(duration: 300.ms),
-    );
-  }
-
-  /// Bouton de contrôle d'overlay flottant
-  Widget _buildOverlayControlButton() {
-    return Positioned(
-      right: 16,
-      bottom: 200,
-      child:
-          FloatingActionButton(
-                mini: true,
-                backgroundColor: Colors.black.withCustomOpacity(0.8),
-                foregroundColor: Colors.blue,
-                heroTag: "overlay_button",
-                onPressed: () async {
-                  final overlayService = NavigationOverlayService.instance;
-
-                  if (overlayService.isOverlayVisible) {
-                    // Masquer l'overlay
-                    await overlayService.hideNavigationOverlay();
-                    await overlayService.hideSystemOverlay();
-
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Overlay masqué'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  } else {
-                    // Afficher l'overlay persistant
-                    await overlayService.showPersistentNavigationOverlay(
-                      context,
-                    );
-
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Overlay navigation activé'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: Icon(
-                  NavigationOverlayService.instance.isOverlayVisible
-                      ? Icons.picture_in_picture
-                      : Icons.picture_in_picture_alt,
-                ),
-              )
-              .animate()
-              .scale(begin: const Offset(0, 0), delay: 200.ms)
-              .fadeIn(duration: 300.ms),
+      child: FloatingActionButton(
+        heroTag: "location",
+        onPressed: () {
+          mapProvider.centerOnCurrentLocation();
+        },
+        backgroundColor: mapProvider.isFollowingUser
+            ? Colors.blue
+            : Colors.white,
+        foregroundColor: mapProvider.isFollowingUser
+            ? Colors.white
+            : Colors.blue,
+        child: const Icon(Icons.my_location),
+      ),
     );
   }
 
@@ -472,7 +413,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget _buildLoadingIndicator() {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withCustomOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         child: Center(
           child:
               Container(
@@ -482,7 +423,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withCustomOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -576,17 +517,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         transportMode: transportMode,
       );
 
-      // Démarrer les notifications de navigation
-      final notificationService = NavigationNotificationService();
-      await notificationService.startNavigation('Vers destination');
-
       // Afficher notification de début de navigation
       if (mounted) {
-        NavigationNotificationService.showInAppNotification(
-          context,
-          title: 'Itinéraire calculé',
-          message: 'Navigation via $transportMode démarrée',
-          icon: Icons.navigation,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Itinéraire calculé via $transportMode'),
+            backgroundColor: Colors.green,
+          ),
         );
 
         // Option pour démarrer la navigation

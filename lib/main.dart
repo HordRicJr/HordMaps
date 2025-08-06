@@ -14,11 +14,7 @@ import 'controllers/search_controller.dart' as search;
 import 'controllers/favorites_controller.dart';
 import 'services/user_service.dart';
 import 'services/cache_service.dart';
-import 'services/emergency_location_disable_service.dart';
-import 'services/auto_recovery_service.dart';
-import 'services/central_event_manager.dart';
-import 'services/performance_monitoring_service.dart';
-import 'services/initialization_manager.dart';
+import 'services/crash_proof_location_service.dart';
 import 'shared/services/poi_service.dart';
 import 'shared/services/offline_service.dart';
 import 'shared/services/storage_service.dart';
@@ -42,75 +38,20 @@ void main() async {
   // Initialisation des animations
   Animate.restartOnHotReload = true;
 
-  // Configurer le gestionnaire d'initialisation
-  final initManager = InitializationManager.instance;
+  // Initialisation des services de base
+  try {
+    await UserService.instance.initialize();
+    await CacheService.initialize();
+    await StorageService.initialize();
 
-  // Enregistrer les services dans l'ordre de priorité
-  initManager.registerService(
-    'UserService',
-    () async {
-      await UserService.instance.initialize();
-      return true;
-    },
-    priority: 1,
-    critical: true,
-  );
+    // Initialiser le service de géolocalisation sécurisé
+    await CrashProofLocationService().initialize();
 
-  initManager.registerService(
-    'CacheService',
-    () async {
-      await CacheService.initialize();
-      return true;
-    },
-    priority: 2,
-    critical: true,
-  );
-
-  initManager.registerService(
-    'StorageService',
-    () async {
-      await StorageService.initialize();
-      return true;
-    },
-    priority: 3,
-    critical: true,
-  );
-
-  // Initialiser tous les services de façon séquentielle
-  final initResult = await initManager.initializeAll();
-
-  if (!initResult.success) {
-    debugPrint('⚠️ Certains services ont échoué à l\'initialisation');
-    debugPrint(initResult.toString());
-
-    // Continuer même en cas d'échec partiel si les services critiques sont OK
-    if (!initManager.areAllCriticalServicesReady()) {
-      debugPrint(
-        '💥 Services critiques non disponibles - Arrêt de l\'application',
-      );
-      return; // Ou throw une exception
-    }
+    debugPrint('✅ Services de base initialisés');
+  } catch (e) {
+    debugPrint('⚠️ Erreur initialisation services: $e');
+    // L'app continue même si certains services échouent
   }
-
-  // Initialisation des services
-  // await UserService.instance.initialize();
-  // await CacheService.initialize();
-
-  // Initialiser le storage service
-  // await StorageService.initialize();
-
-  // Démarrer les services de récupération automatique et gestion d'événements
-  AutoRecoveryService().startRecovery();
-  CentralEventManager().logStatus();
-
-  // Démarrer le monitoring des performances
-  PerformanceMonitoringService.instance.startMonitoring();
-
-  // Configurer les alertes de performance
-  PerformanceMonitoringService.instance.addCriticalWarningCallback(() {
-    debugPrint('🚨 ALERTE CRITIQUE: Déclenchement du nettoyage d\'urgence');
-    PerformanceMonitoringService.instance.forceEmergencyCleanup();
-  });
 
   // Initialiser l'AppController MVC
   await AppController.instance.initializeApp();
@@ -141,7 +82,7 @@ class HordMapsApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CacheService.instance),
         ChangeNotifierProvider(create: (_) => MapProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
-        ChangeNotifierProvider(create: (_) => FallbackLocationService()),
+        ChangeNotifierProvider(create: (_) => CrashProofLocationService()),
         ChangeNotifierProvider(create: (_) => CompleteMapLayerService()),
         ChangeNotifierProvider(
           create: (_) {
