@@ -16,7 +16,7 @@ class NavigationProvider extends ChangeNotifier {
   bool _isRecalculating = false;
   int _currentStepIndex = 0;
   String _routeProfile = 'driving';
-  
+
   // Données additionnelles
   Map<String, dynamic>? _trafficData;
   List<LatLng> _alternativeRoutes = [];
@@ -24,7 +24,7 @@ class NavigationProvider extends ChangeNotifier {
   Duration _timeToDestination = Duration.zero;
   double _currentSpeed = 0.0;
   double _remainingDistance = 0.0;
-  
+
   // Configuration de navigation
   bool _enableVoiceGuidance = true;
   bool _enableTrafficUpdates = true;
@@ -60,14 +60,15 @@ class NavigationProvider extends ChangeNotifier {
   /// Étape actuelle de navigation
   RouteStep? get currentStep =>
       _currentRoute != null && _currentStepIndex < _currentRoute!.steps.length
-          ? _currentRoute!.steps[_currentStepIndex]
-          : null;
+      ? _currentRoute!.steps[_currentStepIndex]
+      : null;
 
   /// Prochaine étape de navigation
   RouteStep? get nextStep =>
-      _currentRoute != null && _currentStepIndex + 1 < _currentRoute!.steps.length
-          ? _currentRoute!.steps[_currentStepIndex + 1]
-          : null;
+      _currentRoute != null &&
+          _currentStepIndex + 1 < _currentRoute!.steps.length
+      ? _currentRoute!.steps[_currentStepIndex + 1]
+      : null;
 
   /// Configure les paramètres de navigation
   void configureNavigation({
@@ -78,7 +79,8 @@ class NavigationProvider extends ChangeNotifier {
     String? navigationLanguage,
   }) {
     if (enableVoiceGuidance != null) _enableVoiceGuidance = enableVoiceGuidance;
-    if (enableTrafficUpdates != null) _enableTrafficUpdates = enableTrafficUpdates;
+    if (enableTrafficUpdates != null)
+      _enableTrafficUpdates = enableTrafficUpdates;
     if (enableAutoReroute != null) _enableAutoReroute = enableAutoReroute;
     if (enableOfflineMode != null) _enableOfflineMode = enableOfflineMode;
     if (navigationLanguage != null) _navigationLanguage = navigationLanguage;
@@ -86,7 +88,12 @@ class NavigationProvider extends ChangeNotifier {
   }
 
   /// Calcule une route entre deux points
-  Future<void> calculateRoute(LatLng start, LatLng end, {String? destinationName, String? transportMode}) async {
+  Future<void> calculateRoute(
+    LatLng start,
+    LatLng end, {
+    String? destinationName,
+    String? transportMode,
+  }) async {
     _isCalculatingRoute = true;
     _startPoint = start;
     _endPoint = end;
@@ -96,7 +103,7 @@ class NavigationProvider extends ChangeNotifier {
     try {
       // Simulation de calcul de route
       await Future.delayed(Duration(seconds: 1));
-      
+
       // Créer une route simple
       _currentRoute = RouteResult(
         points: [start, end],
@@ -157,16 +164,16 @@ class NavigationProvider extends ChangeNotifier {
   /// Met à jour la position actuelle
   void updateCurrentLocation(LatLng location) {
     _currentLocation = location;
-    
+
     if (_isNavigating && _currentRoute != null && _endPoint != null) {
       _remainingDistance = _calculateDistance(location, _endPoint!);
-      
+
       // Vérifier si nous sommes arrivés (dans un rayon de 50m)
       if (_remainingDistance < 50) {
         _handleArrival();
       }
     }
-    
+
     notifyListeners();
   }
 
@@ -181,12 +188,17 @@ class NavigationProvider extends ChangeNotifier {
     const double earthRadius = 6371000; // mètres
     final double lat1Rad = point1.latitude * (math.pi / 180);
     final double lat2Rad = point2.latitude * (math.pi / 180);
-    final double deltaLat = (point2.latitude - point1.latitude) * (math.pi / 180);
-    final double deltaLng = (point2.longitude - point1.longitude) * (math.pi / 180);
+    final double deltaLat =
+        (point2.latitude - point1.latitude) * (math.pi / 180);
+    final double deltaLng =
+        (point2.longitude - point1.longitude) * (math.pi / 180);
 
-    final double a = math.sin(deltaLat / 2) * math.sin(deltaLat / 2) +
-        math.cos(lat1Rad) * math.cos(lat2Rad) *
-        math.sin(deltaLng / 2) * math.sin(deltaLng / 2);
+    final double a =
+        math.sin(deltaLat / 2) * math.sin(deltaLat / 2) +
+        math.cos(lat1Rad) *
+            math.cos(lat2Rad) *
+            math.sin(deltaLng / 2) *
+            math.sin(deltaLng / 2);
     final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
 
     return earthRadius * c;
@@ -214,7 +226,8 @@ class NavigationProvider extends ChangeNotifier {
 
   /// Passe à l'étape suivante de navigation
   void moveToNextStep() {
-    if (_currentRoute != null && _currentStepIndex < _currentRoute!.steps.length - 1) {
+    if (_currentRoute != null &&
+        _currentStepIndex < _currentRoute!.steps.length - 1) {
       _currentStepIndex++;
       notifyListeners();
     }
