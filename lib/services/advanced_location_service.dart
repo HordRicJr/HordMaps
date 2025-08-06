@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:dio/dio.dart';
+import 'safe_location_service.dart';
 
 /// Service de géolocalisation avancé avec données en temps réel
 class AdvancedLocationService extends ChangeNotifier {
@@ -13,13 +14,13 @@ class AdvancedLocationService extends ChangeNotifier {
   AdvancedLocationService._();
 
   final Dio _dio = Dio();
-  StreamSubscription<Position>? _positionSubscription;
+  final SafeLocationService _safeLocationService = SafeLocationService.instance;
+  StreamSubscription<LatLng>? _positionSubscription;
   final StreamController<LatLng> _positionController =
       StreamController<LatLng>.broadcast();
 
   LatLng? _currentPosition;
   double _currentSpeed = 0.0;
-  double _currentHeading = 0.0;
   double _accuracy = 0.0;
   List<NearbyPlace> _nearbyPlaces = [];
   WeatherInfo? _currentWeather;
@@ -29,10 +30,9 @@ class AdvancedLocationService extends ChangeNotifier {
 
   // Getters
   LatLng? get currentPosition => _currentPosition;
-  LatLng? get lastKnownPosition => _currentPosition;
-  bool get isInitialized => _currentPosition != null && _hasPermission;
+  LatLng? get lastKnownPosition => _safeLocationService.lastKnownPosition;
+  bool get isInitialized => _safeLocationService.isInitialized;
   double get currentSpeed => _currentSpeed;
-  double get currentHeading => _currentHeading;
   double get accuracy => _accuracy;
   List<NearbyPlace> get nearbyPlaces => _nearbyPlaces;
   WeatherInfo? get currentWeather => _currentWeather;
@@ -44,79 +44,67 @@ class AdvancedLocationService extends ChangeNotifier {
   /// Initialise et démarre le service de géolocalisation
   Future<bool> initialize() async {
     try {
-      // Vérifier et demander les permissions
-      _hasPermission = await _requestPermissions();
-      if (!_hasPermission) return false;
+      debugPrint('🔍 Initialisation du service de géolocalisation avancé...');
 
-      // Vérifier si le service de localisation est activé
-      _isLocationEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!_isLocationEnabled) return false;
+      // Utiliser SafeLocationService pour la géolocalisation de base
+      final success = await _safeLocationService.initialize();
+      if (!success) {
+        debugPrint(
+          '❌ Échec initialisation SafeLocationService: ${_safeLocationService.lastError}',
+        );
+        return false;
+      }
 
-      // Obtenir la position actuelle
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
+      _hasPermission = _safeLocationService.hasPermission;
+      _isLocationEnabled = _safeLocationService.isLocationEnabled;
+      _currentPosition = _safeLocationService.currentPosition;
+      _accuracy = _safeLocationService.accuracy;
 
-      _updatePosition(position);
-
-      // Démarrer le suivi en temps réel
-      _startLocationTracking();
-
-      // Charger les données dynamiques basées sur la position
-      await _loadLocationBasedData();
+      if (_currentPosition != null) {
+        _updatePosition(_currentPosition!);
+        await _loadLocationBasedData();
+      }
 
       notifyListeners();
+      debugPrint('✅ Service de géolocalisation avancé initialisé');
       return true;
     } catch (e) {
-      debugPrint('Erreur initialisation géolocalisation: $e');
+      debugPrint('❌ Erreur initialisation géolocalisation avancée: $e');
       return false;
     }
-  }
-
-  /// Demande les permissions nécessaires
-  Future<bool> _requestPermissions() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      // Ouvrir les paramètres
-      await Geolocator.openAppSettings();
-      return false;
-    }
-
-    return permission == LocationPermission.whileInUse ||
-        permission == LocationPermission.always;
   }
 
   /// Démarre le suivi de position en temps réel
-  void _startLocationTracking() {
-    const locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 5, // Mise à jour tous les 5 mètres
-    );
+  void _startLocationTracking() async {
+    try {
+      await _safeLocationService.startLocationTracking();
 
-    _positionSubscription =
-        Geolocator.getPositionStream(locationSettings: locationSettings).listen(
-          (Position position) {
-            _updatePosition(position);
-            _loadLocationBasedData(); // Recharger les données à chaque déplacement
-          },
-          onError: (error) {
-            debugPrint('Erreur suivi position: $error');
-          },
-        );
+      _positionSubscription = _safeLocationService.positionStream.listen(
+        (LatLng position) {
+          _updatePosition(position);
+          _loadLocationBasedData(); // Recharger les données à chaque déplacement
+        },
+        onError: (error) {
+          debugPrint('❌ Erreur suivi position avancé: $error');
+        },
+      );
+    } catch (e) {
+      debugPrint('❌ Erreur démarrage suivi avancé: $e');
+    }
   }
 
   /// API publique pour démarrer le suivi
   Future<void> startLocationTracking() async {
     if (!_hasPermission || !_isLocationEnabled) {
-      throw Exception('Permissions ou service de localisation non disponibles');
+      // Essayer de réinitialiser le service
+      final success = await _safeLocationService.reinitialize();
+      if (!success) {
+        throw Exception(
+          'Permissions ou service de localisation non disponibles',
+        );
+      }
+      _hasPermission = _safeLocationService.hasPermission;
+      _isLocationEnabled = _safeLocationService.isLocationEnabled;
     }
     _startLocationTracking();
   }
@@ -143,15 +131,13 @@ class AdvancedLocationService extends ChangeNotifier {
   }
 
   /// Met à jour la position et les données associées
-  void _updatePosition(Position position) {
-    final newPosition = LatLng(position.latitude, position.longitude);
-    _currentPosition = newPosition;
-    _currentSpeed = position.speed * 3.6; // Conversion m/s vers km/h
-    _currentHeading = position.heading;
-    _accuracy = position.accuracy;
+  void _updatePosition(LatLng position) {
+    _currentPosition = position;
+    _currentSpeed = _safeLocationService.currentSpeed;
+    _accuracy = _safeLocationService.accuracy;
 
-    _positionController.add(newPosition);
-    _reverseGeocode(newPosition); // Obtenir l'adresse
+    _positionController.add(position);
+    _reverseGeocode(position); // Obtenir l'adresse
     notifyListeners();
   }
 

@@ -9,6 +9,7 @@ import '../../shared/services/map_customization_service.dart';
 import '../../features/notifications/notification_provider.dart';
 import '../../services/user_service.dart';
 import '../../../shared/extensions/color_extensions.dart';
+import '../../screens/location_diagnostic_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -113,6 +114,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _locationEnabled = value;
                 });
                 _saveSettings();
+              },
+            ),
+            _buildNavigationTile(
+              'Diagnostic Géolocalisation',
+              'Tester et déboguer les problèmes GPS',
+              Icons.bug_report,
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LocationDiagnosticScreen(),
+                  ),
+                );
               },
             ),
             _buildDropdownTile(
