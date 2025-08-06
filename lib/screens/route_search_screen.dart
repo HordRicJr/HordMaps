@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'route_navigation_page.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 class RouteSearchScreen extends StatefulWidget {
   final String? initialDeparture;
@@ -156,7 +157,7 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            color: Colors.black.withCustomOpacity(isDark ? 0.3 : 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -182,7 +183,7 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withOpacity(0.1),
+                color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
@@ -287,7 +288,7 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            color: Colors.black.withCustomOpacity(isDark ? 0.3 : 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -372,7 +373,7 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            color: Colors.black.withCustomOpacity(isDark ? 0.3 : 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -407,7 +408,7 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
                   contentPadding: EdgeInsets.zero,
                 ),
               )
-              .toList(),
+              ,
         ],
       ),
     );
@@ -543,7 +544,7 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4CAF50).withOpacity(0.1),
+                          color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(

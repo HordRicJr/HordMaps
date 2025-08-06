@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../shared/services/traffic_analysis_service.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class TrafficStatsScreen extends StatefulWidget {
   const TrafficStatsScreen({super.key});
@@ -307,7 +308,7 @@ class _TrafficStatsScreenState extends State<TrafficStatsScreen>
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(

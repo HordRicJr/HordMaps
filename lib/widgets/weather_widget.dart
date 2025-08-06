@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../services/advanced_location_service.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 class WeatherWidget extends StatelessWidget {
   const WeatherWidget({super.key});
@@ -23,7 +24,7 @@ class WeatherWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withCustomOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),

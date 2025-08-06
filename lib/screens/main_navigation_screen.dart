@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 import 'modern_home_page.dart';
 import 'route_search_screen.dart';
@@ -6,6 +7,7 @@ import 'favorites_screen.dart';
 import 'profile_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../services/navigation_notification_service.dart';
+import '../shared/services/fluid_navigation_service.dart';
 
 /// Écran principal avec navigation entre les onglets
 class MainNavigationScreen extends StatefulWidget {
@@ -35,40 +37,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     setState(() {
       _selectedIndex = index;
     });
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return WillPopScope(
-      onWillPop: () async {
-        return await NavigationNotificationService.showExitConfirmation(
-          context,
-        );
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+
+        final shouldPop =
+            await NavigationNotificationService.showExitConfirmation(context);
+
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
       },
       child: Scaffold(
-        body: PageView(
-          controller: _pageController,
-          onPageChanged: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          children: [
+        body: FluidTabTransition(
+          currentIndex: _selectedIndex,
+          children: const [
             // Accueil
-            const ModernHomePage(),
+            ModernHomePage(),
             // Itinéraire
-            const RouteSearchScreen(),
+            RouteSearchScreen(),
             // Favoris
-            const FavoritesScreen(),
+            FavoritesScreen(),
             // Profil
-            const ProfileScreen(),
+            ProfileScreen(),
           ],
         ),
         bottomNavigationBar: Container(
@@ -81,8 +79,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(0.3)
-                    : Colors.grey.withOpacity(0.2),
+                    ? Colors.black.withCustomOpacity(0.3)
+                    : Colors.grey.withCustomOpacity(0.2),
                 blurRadius: 10,
                 offset: const Offset(0, -4),
               ),
@@ -140,9 +138,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         IconButton(
           icon: const Icon(Icons.settings),
           onPressed: () {
-            Navigator.push(
+            FluidNavigationService.navigateTo(
               context,
-              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              const SettingsScreen(),
+              transition: NavigationTransition.slideFromRight,
             );
           },
         ),

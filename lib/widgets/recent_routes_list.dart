@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 import '../services/advanced_location_service.dart';
 import '../services/cache_service.dart';
@@ -66,7 +67,7 @@ class RecentRoutesList extends StatelessWidget {
             size: 48,
             color: Theme.of(
               context,
-            ).textTheme.bodyMedium?.color?.withOpacity(0.5),
+            ).textTheme.bodyMedium?.color?.withCustomOpacity(0.5),
           ),
           const SizedBox(height: 12),
           Text(
@@ -79,7 +80,7 @@ class RecentRoutesList extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.color?.withOpacity(0.7),
+              ).textTheme.bodyMedium?.color?.withCustomOpacity(0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -275,7 +276,7 @@ class _RouteCard extends StatelessWidget {
           border: Border.all(color: Theme.of(context).dividerColor, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withCustomOpacity(0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -286,7 +287,7 @@ class _RouteCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _getRouteTypeColor().withOpacity(0.1),
+                color: _getRouteTypeColor().withCustomOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -320,7 +321,7 @@ class _RouteCard extends StatelessWidget {
                         size: 14,
                         color: Theme.of(
                           context,
-                        ).textTheme.bodySmall?.color?.withOpacity(0.7),
+                        ).textTheme.bodySmall?.color?.withCustomOpacity(0.7),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -328,7 +329,7 @@ class _RouteCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(
                             context,
-                          ).textTheme.bodySmall?.color?.withOpacity(0.7),
+                          ).textTheme.bodySmall?.color?.withCustomOpacity(0.7),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -337,7 +338,7 @@ class _RouteCard extends StatelessWidget {
                         size: 14,
                         color: Theme.of(
                           context,
-                        ).textTheme.bodySmall?.color?.withOpacity(0.7),
+                        ).textTheme.bodySmall?.color?.withCustomOpacity(0.7),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -345,7 +346,7 @@ class _RouteCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(
                             context,
-                          ).textTheme.bodySmall?.color?.withOpacity(0.7),
+                          ).textTheme.bodySmall?.color?.withCustomOpacity(0.7),
                         ),
                       ),
                     ],
@@ -361,7 +362,7 @@ class _RouteCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(
                       context,
-                    ).textTheme.bodySmall?.color?.withOpacity(0.7),
+                    ).textTheme.bodySmall?.color?.withCustomOpacity(0.7),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -370,7 +371,7 @@ class _RouteCard extends StatelessWidget {
                   size: 14,
                   color: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.color?.withOpacity(0.5),
+                  ).textTheme.bodySmall?.color?.withCustomOpacity(0.5),
                 ),
               ],
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../providers/search_provider.dart';
+import '../../../../shared/extensions/color_extensions.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -213,7 +214,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                            color: Colors.black.withCustomOpacity(isDark ? 0.3 : 0.1),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),

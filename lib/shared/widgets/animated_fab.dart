@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class AnimatedFAB extends StatefulWidget {
   final IconData icon;
@@ -96,7 +97,7 @@ class _AnimatedFABState extends State<AnimatedFAB>
                         color:
                             (widget.backgroundColor ??
                                     Theme.of(context).primaryColor)
-                                .withOpacity(0.3),
+                                .withCustomOpacity(0.3),
                         blurRadius: _isPressed ? 8 : 12,
                         offset: Offset(0, _isPressed ? 2 : 4),
                       ),

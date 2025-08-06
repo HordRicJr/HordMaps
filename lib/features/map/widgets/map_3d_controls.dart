@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../services/map_3d_service.dart';
+import '../../../../shared/extensions/color_extensions.dart';
 
 /// Widget de contrôles 3D pour la carte
 class Map3DControls extends StatelessWidget {
@@ -17,7 +17,7 @@ class Map3DControls extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -237,7 +237,7 @@ class ElevationProfileWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -310,7 +310,7 @@ class ElevationProfilePainter extends CustomPainter {
     if (elevationProfile.isEmpty) return;
 
     final paint = Paint()
-      ..color = primaryColor.withOpacity(0.3)
+      ..color = primaryColor.withCustomOpacity(0.3)
       ..style = PaintingStyle.fill;
 
     final linePaint = Paint()

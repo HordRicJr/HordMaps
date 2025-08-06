@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:latlong2/latlong.dart';
 import 'real_time_navigation_service.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 /// Service pour gérer les overlays de navigation flottants
 class NavigationOverlayService {
@@ -230,21 +230,21 @@ class _DynamicNavigationOverlayState extends State<DynamicNavigationOverlay>
         child: Material(
           elevation: 12,
           borderRadius: BorderRadius.circular(16),
-          shadowColor: Colors.black.withOpacity(0.3),
+          shadowColor: Colors.black.withCustomOpacity(0.3),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             height: _isMinimized ? 60 : 120,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.black.withOpacity(0.9),
-                  Colors.black.withOpacity(0.8),
+                  Colors.black.withCustomOpacity(0.9),
+                  Colors.black.withCustomOpacity(0.8),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.blue.withOpacity(0.6), width: 2),
+              border: Border.all(color: Colors.blue.withCustomOpacity(0.6), width: 2),
             ),
             child: _isMinimized
                 ? _buildMinimizedContent()
@@ -268,7 +268,7 @@ class _DynamicNavigationOverlayState extends State<DynamicNavigationOverlay>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.2),
+                    color: Colors.blue.withCustomOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -422,7 +422,7 @@ class _DynamicNavigationOverlayState extends State<DynamicNavigationOverlay>
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withCustomOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -516,12 +516,12 @@ class _PersistentNavigationOverlayState
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.8),
+            color: Colors.black.withCustomOpacity(0.8),
             borderRadius: BorderRadius.circular(40),
             border: Border.all(color: Colors.blue, width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withCustomOpacity(0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -533,7 +533,7 @@ class _PersistentNavigationOverlayState
               const Icon(Icons.navigation, color: Colors.blue, size: 24),
               const SizedBox(height: 4),
               Text(
-                '${_currentProgress!.remainingDistance.toStringAsFixed(1)}',
+                _currentProgress!.remainingDistance.toStringAsFixed(1),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 10,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../features/search/providers/search_provider.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class AnimatedSearchBar extends StatefulWidget {
   final AnimationController controller;
@@ -46,7 +47,7 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withCustomOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -113,7 +114,7 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withCustomOpacity(0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -158,7 +159,7 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar> {
                 border: index < widget.results.length - 1
                     ? Border(
                         bottom: BorderSide(
-                          color: Colors.grey.withOpacity(0.2),
+                          color: Colors.grey.withCustomOpacity(0.2),
                           width: 1,
                         ),
                       )
@@ -169,7 +170,7 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(

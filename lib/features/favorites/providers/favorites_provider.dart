@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../shared/services/storage_service.dart';
+import '../../../../shared/extensions/color_extensions.dart';
 
 class FavoritesProvider extends ChangeNotifier {
   List<Favorite> _favorites = [];
@@ -191,7 +192,7 @@ class FavoritesList extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -214,7 +215,7 @@ class FavoritesList extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

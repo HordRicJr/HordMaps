@@ -8,6 +8,7 @@ import '../theme/theme_provider.dart';
 import '../../shared/services/map_customization_service.dart';
 import '../../features/notifications/notification_provider.dart';
 import '../../services/user_service.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -625,7 +626,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

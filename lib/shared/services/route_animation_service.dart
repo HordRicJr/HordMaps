@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 /// Configuration pour l'animation de trajet
 class RouteAnimationConfig {
@@ -380,7 +381,7 @@ class _RouteAnimationWidgetState extends State<RouteAnimationWidget>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withCustomOpacity(0.3),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -418,7 +419,7 @@ class RouteAnimationController extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withCustomOpacity(0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),

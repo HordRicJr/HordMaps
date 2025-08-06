@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import '../../shared/services/poi_service.dart';
 import '../../shared/services/share_service.dart';
 import '../../features/map/providers/map_provider.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class POIScreen extends StatefulWidget {
   const POIScreen({super.key});
@@ -345,7 +346,7 @@ class _POIScreenState extends State<POIScreen> with TickerProviderStateMixin {
                       color: context
                           .read<POIService>()
                           .getCategoryColor(poi.category)
-                          .withOpacity(0.1),
+                          .withCustomOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -445,7 +446,7 @@ class _POIScreenState extends State<POIScreen> with TickerProviderStateMixin {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withCustomOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -522,7 +523,7 @@ class _POIScreenState extends State<POIScreen> with TickerProviderStateMixin {
                   color: context
                       .read<POIService>()
                       .getCategoryColor(poi.category)
-                      .withOpacity(0.1),
+                      .withCustomOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

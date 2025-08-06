@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../models/navigation_models.dart';
+import '../../../../shared/extensions/color_extensions.dart';
 
 class NavigationPanel extends StatelessWidget {
   final RouteStep? currentStep;
@@ -29,7 +30,7 @@ class NavigationPanel extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withCustomOpacity(0.15),
                 blurRadius: 20,
                 offset: const Offset(0, -4),
               ),
@@ -174,7 +175,7 @@ class NavigationPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

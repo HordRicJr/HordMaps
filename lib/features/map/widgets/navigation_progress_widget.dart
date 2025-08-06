@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../services/real_time_navigation_service.dart';
-import '../../navigation/providers/navigation_provider_basic.dart';
+import '../../../../shared/extensions/color_extensions.dart';
+import '../../navigation/providers/providers.dart';
 
 /// Widget pour afficher la progression de navigation en temps réel
 class NavigationProgressWidget extends StatefulWidget {
@@ -47,7 +48,7 @@ class _NavigationProgressWidgetState extends State<NavigationProgressWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -69,7 +70,7 @@ class _NavigationProgressWidgetState extends State<NavigationProgressWidget> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
@@ -118,7 +119,7 @@ class _NavigationProgressWidgetState extends State<NavigationProgressWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withCustomOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 1),
       ),
@@ -163,7 +164,7 @@ class _NavigationProgressWidgetState extends State<NavigationProgressWidget> {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: percentage,
-              backgroundColor: Colors.grey.withOpacity(0.2),
+              backgroundColor: Colors.grey.withCustomOpacity(0.2),
               valueColor: AlwaysStoppedAnimation<Color>(
                 _getProgressColor(_currentProgress!.completionPercentage),
               ),
@@ -222,9 +223,9 @@ class _NavigationProgressWidgetState extends State<NavigationProgressWidget> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withCustomOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withCustomOpacity(0.3)),
       ),
       child: Column(
         children: [
@@ -233,7 +234,7 @@ class _NavigationProgressWidgetState extends State<NavigationProgressWidget> {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: color.withOpacity(0.8),
+              color: color.withCustomOpacity(0.8),
               fontSize: 10,
             ),
             textAlign: TextAlign.center,
@@ -257,7 +258,7 @@ class _NavigationProgressWidgetState extends State<NavigationProgressWidget> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
+        color: Colors.grey.withCustomOpacity(0.05),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(16),
           bottomRight: Radius.circular(16),

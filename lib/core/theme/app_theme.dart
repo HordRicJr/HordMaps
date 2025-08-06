@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class AppTheme {
   // Couleurs principales
@@ -26,8 +27,6 @@ class AppTheme {
     onSurface: Color(0xFF1C1B1F),
     error: errorColor,
     onError: Colors.white,
-    background: backgroundColor,
-    onBackground: Color(0xFF1C1B1F),
   );
 
   // Schéma de couleurs pour le thème sombre
@@ -41,8 +40,6 @@ class AppTheme {
     onSurface: Color(0xFFE6E1E5),
     error: errorColor,
     onError: Colors.black,
-    background: darkBackgroundColor,
-    onBackground: Color(0xFFE6E1E5),
   );
 
   // Thème clair
@@ -70,7 +67,7 @@ class AppTheme {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 2,
-        shadowColor: primaryColor.withOpacity(0.3),
+        shadowColor: primaryColor.withCustomOpacity(0.3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
@@ -108,7 +105,7 @@ class AppTheme {
     // Card
     cardTheme: CardThemeData(
       elevation: 2,
-      shadowColor: primaryColor.withOpacity(0.1),
+      shadowColor: primaryColor.withCustomOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
 
@@ -146,7 +143,7 @@ class AppTheme {
         backgroundColor: primaryLightColor,
         foregroundColor: Colors.black,
         elevation: 2,
-        shadowColor: primaryLightColor.withOpacity(0.3),
+        shadowColor: primaryLightColor.withCustomOpacity(0.3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
@@ -184,7 +181,7 @@ class AppTheme {
     // Card
     cardTheme: CardThemeData(
       elevation: 2,
-      shadowColor: primaryLightColor.withOpacity(0.1),
+      shadowColor: primaryLightColor.withCustomOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
 

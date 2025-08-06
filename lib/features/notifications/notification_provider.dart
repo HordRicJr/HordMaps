@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 /// Types de notifications
 enum NotificationType { info, success, warning, error }
@@ -366,7 +367,7 @@ class _NotificationCardState extends State<_NotificationCard>
                   border: Border.all(
                     color: widget.notification
                         .getColor(context)
-                        .withOpacity(0.3),
+                        .withCustomOpacity(0.3),
                     width: 1,
                   ),
                 ),
@@ -382,7 +383,7 @@ class _NotificationCardState extends State<_NotificationCard>
                           decoration: BoxDecoration(
                             color: widget.notification
                                 .getColor(context)
-                                .withOpacity(0.1),
+                                .withCustomOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(

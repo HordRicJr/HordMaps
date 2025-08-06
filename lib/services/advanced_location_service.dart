@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:dio/dio.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 /// Service de géolocalisation avancé avec données en temps réel
 class AdvancedLocationService extends ChangeNotifier {
@@ -165,8 +163,9 @@ class AdvancedLocationService extends ChangeNotifier {
 
         // Construire une adresse lisible
         List<String> addressParts = [];
-        if (address['house_number'] != null)
+        if (address['house_number'] != null) {
           addressParts.add(address['house_number']);
+        }
         if (address['road'] != null) addressParts.add(address['road']);
         if (address['city'] != null) addressParts.add(address['city']);
         if (address['country'] != null) addressParts.add(address['country']);
@@ -323,14 +322,17 @@ out center meta;
   String _getCategoryFromTags(Map<String, dynamic> tags) {
     if (tags.containsKey('amenity')) {
       final amenity = tags['amenity'];
-      if (['restaurant', 'cafe', 'fast_food', 'bar'].contains(amenity))
+      if (['restaurant', 'cafe', 'fast_food', 'bar'].contains(amenity)) {
         return 'restaurant';
-      if (['hospital', 'pharmacy', 'dentist', 'clinic'].contains(amenity))
+      }
+      if (['hospital', 'pharmacy', 'dentist', 'clinic'].contains(amenity)) {
         return 'health';
+      }
       if (['bank', 'atm'].contains(amenity)) return 'finance';
       if (['fuel'].contains(amenity)) return 'fuel';
-      if (['school', 'university', 'library'].contains(amenity))
+      if (['school', 'university', 'library'].contains(amenity)) {
         return 'education';
+      }
     }
 
     if (tags.containsKey('shop')) return 'shopping';
@@ -346,10 +348,12 @@ out center meta;
     final random = math.Random();
     final distribution = random.nextDouble();
 
-    if (distribution < 0.1)
+    if (distribution < 0.1) {
       return 2.0 + random.nextDouble() * 1; // 2-3 étoiles (10%)
-    if (distribution < 0.3)
+    }
+    if (distribution < 0.3) {
       return 3.0 + random.nextDouble() * 1; // 3-4 étoiles (20%)
+    }
     return 4.0 + random.nextDouble() * 1; // 4-5 étoiles (70%)
   }
 
@@ -443,6 +447,7 @@ out center meta;
   }
 
   /// Nettoie les ressources
+  @override
   void dispose() {
     _positionSubscription?.cancel();
     _positionController.close();

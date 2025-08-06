@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 import '../services/advanced_location_service.dart';
 import '../widgets/weather_widget.dart';
@@ -244,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               end: Alignment.bottomRight,
               colors: [
                 Theme.of(context).primaryColor,
-                Theme.of(context).primaryColor.withOpacity(0.8),
+                Theme.of(context).primaryColor.withCustomOpacity(0.8),
                 Theme.of(context).colorScheme.secondary,
               ],
             ),
@@ -298,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.9),
+          color: Colors.orange.withCustomOpacity(0.9),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Row(
@@ -318,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.9),
+        color: Colors.green.withCustomOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Row(

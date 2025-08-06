@@ -6,7 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'features/favorites/providers/favorites_provider.dart';
 import 'features/map/providers/map_provider.dart';
 import 'features/search/providers/search_provider.dart';
-import 'features/navigation/providers/navigation_provider_basic.dart';
+import 'features/navigation/providers/providers.dart';
 import 'features/theme/theme_provider.dart';
 import 'services/user_service.dart';
 import 'services/cache_service.dart';
@@ -52,7 +52,14 @@ class HordMapsApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CacheService.instance),
         ChangeNotifierProvider(create: (_) => MapProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
-        ChangeNotifierProvider(create: (_) => NavigationProvider()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final provider = NavigationProvider();
+            // Initialisation différée sans bloquer la création
+            provider.initialize();
+            return provider;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => POIService()),
         ChangeNotifierProvider(create: (_) => OfflineService(StorageService())),
       ],

@@ -163,10 +163,10 @@ class ARNavigationService extends ChangeNotifier {
     _arObjects.removeWhere((obj) => obj.distance > 2000);
 
     // Recalculer les positions relatives
-    _arObjects.forEach((obj) {
+    for (var obj in _arObjects) {
       // Ici on mettrait à jour les positions 3D basées sur
       // la position actuelle, l'orientation, etc.
-    });
+    }
 
     notifyListeners();
   }

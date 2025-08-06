@@ -387,8 +387,9 @@ class PublicTransportService extends ChangeNotifier {
     if (tags['tactile_paving'] == 'yes') accessibility['tactile_paving'] = true;
     if (tags['shelter'] == 'yes') accessibility['shelter'] = true;
     if (tags['bench'] == 'yes') accessibility['bench'] = true;
-    if (tags['departures_board'] == 'yes')
+    if (tags['departures_board'] == 'yes') {
       accessibility['departures_board'] = true;
+    }
 
     return accessibility;
   }

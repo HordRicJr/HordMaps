@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:latlong2/latlong.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 import '../features/favorites/providers/favorites_provider.dart';
 import '../features/map/screens/map_screen.dart';
@@ -93,7 +94,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -141,7 +142,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -179,7 +180,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withCustomOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -254,7 +255,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -272,7 +273,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(

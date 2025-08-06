@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/user_service.dart';
 import '../features/settings/settings_screen.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -90,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withCustomOpacity(0.2),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -116,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 : 'Explorer le monde avec intelligence',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withCustomOpacity(0.9),
             ),
           ),
           const SizedBox(height: 16),
@@ -147,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -191,7 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: const Color(0xFF4CAF50).withOpacity(0.1),
+            color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: const Color(0xFF4CAF50), size: 24),
@@ -251,7 +252,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -285,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: const Color(0xFF4CAF50).withOpacity(0.1),
+          color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: const Color(0xFF4CAF50), size: 22),
@@ -321,7 +322,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

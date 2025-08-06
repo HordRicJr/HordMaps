@@ -4,12 +4,15 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 import '../features/map/screens/map_screen.dart';
 import '../features/search/providers/search_provider.dart';
 import '../features/map/providers/map_provider.dart';
 import '../features/settings/settings_screen.dart';
 import '../shared/services/map_customization_service.dart';
+import '../shared/services/ui_enhancement_service.dart';
+import '../shared/services/fluid_navigation_service.dart';
 import '../services/voice_guidance_service.dart';
 import '../services/places_service.dart';
 import '../services/navigation_notification_service.dart';
@@ -240,7 +243,7 @@ class _ModernHomePageState extends State<ModernHomePage>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -264,7 +267,7 @@ class _ModernHomePageState extends State<ModernHomePage>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -308,27 +311,14 @@ class _ModernHomePageState extends State<ModernHomePage>
           // Bouton rechercher
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: BouncyButton(
               onPressed: () => _searchRoute(),
-              style: ElevatedButton.styleFrom(
+              child: UIEnhancementService.modernButton(
+                text: 'Rechercher l\'itinéraire',
+                onPressed: () => _searchRoute(),
+                isDark: isDark,
                 backgroundColor: Colors.purple[400],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 4,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.directions),
-                  SizedBox(width: 8),
-                  Text(
-                    'Rechercher l\'itinéraire',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ],
+                icon: Icons.directions,
               ),
             ),
           ),
@@ -344,30 +334,12 @@ class _ModernHomePageState extends State<ModernHomePage>
     required Color iconColor,
     required bool isDark,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[700] : Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? Colors.grey[600]! : Colors.grey[300]!,
-        ),
-      ),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: iconColor),
-          hintText: hint,
-          hintStyle: TextStyle(
-            color: isDark ? Colors.grey[400] : Colors.grey[600],
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-        ),
-        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-      ),
+    return UIEnhancementService.modernTextField(
+      controller: controller,
+      hint: hint,
+      isDark: isDark,
+      prefixIcon: icon,
+      prefixIconColor: iconColor,
     );
   }
 
@@ -380,7 +352,7 @@ class _ModernHomePageState extends State<ModernHomePage>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -489,7 +461,7 @@ class _ModernHomePageState extends State<ModernHomePage>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -562,7 +534,7 @@ class _ModernHomePageState extends State<ModernHomePage>
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withCustomOpacity(0.1),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -581,7 +553,7 @@ class _ModernHomePageState extends State<ModernHomePage>
                                 decoration: BoxDecoration(
                                   color: const Color(
                                     0xFF4CAF50,
-                                  ).withOpacity(0.1),
+                                  ).withCustomOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Center(
@@ -703,7 +675,7 @@ class _ModernHomePageState extends State<ModernHomePage>
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: (category['color'] as Color).withOpacity(
+                                color: (category['color'] as Color).withCustomOpacity(
                                   0.2,
                                 ),
                                 shape: BoxShape.circle,
@@ -857,7 +829,7 @@ class _ModernHomePageState extends State<ModernHomePage>
                 )
                 .fadeIn()
                 .slideY(begin: 0.3);
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -921,21 +893,25 @@ class _ModernHomePageState extends State<ModernHomePage>
   void _searchRoute() {
     if (_departController.text.isNotEmpty &&
         _arrivalController.text.isNotEmpty) {
-      Navigator.push(
+      FluidNavigationService.navigateTo(
         context,
-        MaterialPageRoute(builder: (context) => const MapScreen()),
+        const MapScreen(),
+        transition: NavigationTransition.slideFromRight,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir les deux champs')),
+      UIEnhancementService.showModernSnackBar(
+        context: context,
+        message: 'Veuillez remplir les deux champs',
+        type: SnackBarType.warning,
       );
     }
   }
 
   void _openMap() {
-    Navigator.push(
+    FluidNavigationService.navigateTo(
       context,
-      MaterialPageRoute(builder: (context) => const MapScreen()),
+      const MapScreen(),
+      transition: NavigationTransition.scale,
     );
   }
 
@@ -959,9 +935,10 @@ class _ModernHomePageState extends State<ModernHomePage>
 
   void _navigateToMapTab() {
     // Pour l'instant, on va utiliser Navigator pour aller à la carte
-    Navigator.push(
+    FluidNavigationService.navigateTo(
       context,
-      MaterialPageRoute(builder: (context) => const MapScreen()),
+      const MapScreen(),
+      transition: NavigationTransition.slideFromRight,
     );
   }
 
@@ -996,9 +973,10 @@ class _ModernHomePageState extends State<ModernHomePage>
     }
 
     // Naviguer vers la carte
-    Navigator.push(
+    FluidNavigationService.navigateTo(
       context,
-      MaterialPageRoute(builder: (context) => const MapScreen()),
+      const MapScreen(),
+      transition: NavigationTransition.slideFromBottom,
     );
   }
 }

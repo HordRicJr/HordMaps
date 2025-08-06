@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../extensions/color_extensions.dart';
 import 'dart:math' as math;
-import '../../../shared/extensions/color_extensions.dart';
 
-class CompassUtils {
+class CompassService {
   /// Convertit un angle en radians
   static double degreesToRadians(double degrees) {
     return degrees * (math.pi / 180);
@@ -127,7 +127,7 @@ class _CompassWidgetState extends State<CompassWidget>
         animation: _animation,
         builder: (context, child) {
           return Transform.rotate(
-            angle: CompassUtils.degreesToRadians(_animation.value),
+            angle: CompassService.degreesToRadians(_animation.value),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -186,7 +186,7 @@ class _CompassWidgetState extends State<CompassWidget>
                   final angle = index * 90.0;
                   final isNorth = index == 0;
                   return Transform.rotate(
-                    angle: CompassUtils.degreesToRadians(angle),
+                    angle: CompassService.degreesToRadians(angle),
                     child: Positioned(
                       top: 4,
                       child: Text(
@@ -216,10 +216,10 @@ class CompassProvider extends ChangeNotifier {
 
   double get heading => _heading;
   bool get isEnabled => _isEnabled;
-  String get cardinalDirection => CompassUtils.angleToCardinal(_heading);
+  String get cardinalDirection => CompassService.angleToCardinal(_heading);
 
   void updateHeading(double heading) {
-    _heading = CompassUtils.normalizeAngle(heading);
+    _heading = CompassService.normalizeAngle(heading);
     notifyListeners();
   }
 

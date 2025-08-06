@@ -3,10 +3,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../shared/extensions/color_extensions.dart';
 
 import '../providers/map_provider.dart';
 import '../../search/providers/search_provider.dart';
-import '../../navigation/providers/navigation_provider_basic.dart';
+import '../../navigation/providers/providers.dart';
 import '../../favorites/providers/favorites_provider.dart';
 import '../../../shared/widgets/animated_search_bar.dart';
 import '../../../shared/widgets/location_button.dart';
@@ -215,7 +216,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         border: Border.all(color: Colors.white, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withCustomOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -242,7 +243,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         border: Border.all(color: Colors.white, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withCustomOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -270,7 +271,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         border: Border.all(color: Colors.white, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(0.3),
+                            color: Colors.blue.withCustomOpacity(0.3),
                             blurRadius: 10,
                             spreadRadius: 5,
                           ),
@@ -321,7 +322,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withCustomOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -392,7 +393,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       child:
           FloatingActionButton(
                 mini: true,
-                backgroundColor: Colors.black.withOpacity(0.8),
+                backgroundColor: Colors.black.withCustomOpacity(0.8),
                 foregroundColor: Colors.blue,
                 heroTag: "overlay_button",
                 onPressed: () async {
@@ -403,24 +404,28 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     await overlayService.hideNavigationOverlay();
                     await overlayService.hideSystemOverlay();
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Overlay masqué'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Overlay masqué'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   } else {
                     // Afficher l'overlay persistant
                     await overlayService.showPersistentNavigationOverlay(
                       context,
                     );
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Overlay navigation activé'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Overlay navigation activé'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   }
                 },
                 child: Icon(
@@ -467,7 +472,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget _buildLoadingIndicator() {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withCustomOpacity(0.3),
         child: Center(
           child:
               Container(
@@ -477,7 +482,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withCustomOpacity(0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

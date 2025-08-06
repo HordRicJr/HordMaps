@@ -232,6 +232,7 @@ class ElevationService extends ChangeNotifier {
   }
 
   /// Libère les ressources
+  @override
   void dispose() {
     _elevationCache.clear();
     _dio.close();

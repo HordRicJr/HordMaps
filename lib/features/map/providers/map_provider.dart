@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../services/location_service.dart';
+import '../../../../shared/extensions/color_extensions.dart';
 
 class MapProvider extends ChangeNotifier {
   final MapController _mapController = MapController();
@@ -13,8 +14,8 @@ class MapProvider extends ChangeNotifier {
   double _mapZoom = 13.0;
   bool _isLoading = false;
   bool _isFollowingUser = false;
-  List<Marker> _markers = [];
-  List<Polyline> _routes = [];
+  final List<Marker> _markers = [];
+  final List<Polyline> _routes = [];
   String _tileLayerUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   // Points d'itinéraire
@@ -114,7 +115,7 @@ class MapProvider extends ChangeNotifier {
             border: Border.all(color: Colors.white, width: 3),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withCustomOpacity(0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -265,7 +266,7 @@ class MapProvider extends ChangeNotifier {
             border: Border.all(color: Colors.white, width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withCustomOpacity(0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),

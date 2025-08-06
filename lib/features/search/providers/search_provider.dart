@@ -77,7 +77,7 @@ class SearchProvider extends ChangeNotifier {
         _searchResults = [];
       }
     } catch (e) {
-      print('Erreur de recherche: $e');
+      debugPrint('Erreur de recherche: $e');
       _searchResults = [];
     } finally {
       _isSearching = false;
@@ -113,7 +113,7 @@ class SearchProvider extends ChangeNotifier {
         _searchResults = [];
       }
     } catch (e) {
-      print('Erreur de recherche à proximité: $e');
+      debugPrint('Erreur de recherche à proximité: $e');
       _searchResults = [];
     } finally {
       _isSearching = false;
@@ -139,7 +139,7 @@ class SearchProvider extends ChangeNotifier {
         return data['display_name'];
       }
     } catch (e) {
-      print('Erreur de géocodage inverse: $e');
+      debugPrint('Erreur de géocodage inverse: $e');
     }
     return null;
   }

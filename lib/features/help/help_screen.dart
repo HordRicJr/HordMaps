@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../shared/services/shortcut_service.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -287,7 +288,7 @@ class _HelpScreenState extends State<HelpScreen>
 
         const SizedBox(height: 32),
         Card(
-          color: Theme.of(context).primaryColor.withOpacity(0.1),
+          color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(

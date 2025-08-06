@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 /// Configuration pour le clustering des marqueurs
 class ClusterConfig {
@@ -112,7 +113,7 @@ class CustomMarker {
       'title': title,
       'description': description,
       'category': category.name,
-      'customColor': customColor?.value,
+      'customColor': customColor?.toARGB32(),
       'customIcon': customIcon?.codePoint,
       'customSize': customSize,
       'metadata': metadata,
@@ -185,7 +186,7 @@ class MarkerClusterService {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withCustomOpacity(0.3),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -216,7 +217,7 @@ class MarkerClusterService {
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withCustomOpacity(0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -318,7 +319,7 @@ class MarkerClusterService {
 class MarkerClusterProvider extends ChangeNotifier {
   final List<CustomMarker> _markers = [];
   ClusterConfig _config = const ClusterConfig();
-  List<MarkerCategory> _visibleCategories = MarkerCategory.values;
+  final List<MarkerCategory> _visibleCategories = MarkerCategory.values;
   LatLngBounds? _currentBounds;
 
   List<CustomMarker> get markers => List.unmodifiable(_markers);

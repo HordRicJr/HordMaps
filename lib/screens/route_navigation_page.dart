@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import '../../shared/extensions/color_extensions.dart';
 
-import '../features/navigation/providers/navigation_provider_basic.dart';
+import '../features/navigation/providers/providers.dart';
 import '../services/voice_guidance_service.dart';
 
 /// Page d'itinéraire moderne avec navigation turn-by-turn
@@ -73,7 +74,7 @@ class _RouteNavigationPageState extends State<RouteNavigationPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -147,7 +148,7 @@ class _RouteNavigationPageState extends State<RouteNavigationPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -294,7 +295,7 @@ class _RouteNavigationPageState extends State<RouteNavigationPage> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withCustomOpacity(0.05),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -362,7 +363,7 @@ class _RouteNavigationPageState extends State<RouteNavigationPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, -4),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class LoadingIndicator extends StatelessWidget {
   final String message;
@@ -21,7 +22,7 @@ class LoadingIndicator extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withCustomOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

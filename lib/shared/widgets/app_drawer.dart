@@ -4,6 +4,7 @@ import '../../features/help/help_screen.dart';
 import '../../features/offline/offline_map_screen.dart';
 import '../../features/traffic/traffic_stats_screen.dart';
 import 'app_actions.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -183,7 +184,7 @@ class AppDrawer extends StatelessWidget {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -228,7 +229,7 @@ class AppDrawer extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withOpacity(0.8),
+            Theme.of(context).primaryColor.withCustomOpacity(0.8),
           ],
         ),
       ),
@@ -249,7 +250,7 @@ class AppDrawer extends StatelessWidget {
           Text(
             'Navigation intelligente',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withCustomOpacity(0.8),
               fontSize: 14,
             ),
           ),
@@ -277,7 +278,7 @@ class AppDrawer extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         color: isActive
-            ? Theme.of(context).primaryColor.withOpacity(0.1)
+            ? Theme.of(context).primaryColor.withCustomOpacity(0.1)
             : null,
       ),
       child: ListTile(

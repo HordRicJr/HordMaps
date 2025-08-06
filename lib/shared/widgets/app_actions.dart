@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../features/map/providers/map_provider.dart';
 import '../../features/search/providers/search_provider.dart';
-import '../../features/navigation/providers/navigation_provider_basic.dart';
+import '../../features/navigation/providers/providers.dart';
 import '../../features/favorites/providers/favorites_provider.dart';
 import '../../services/measurement_service.dart';
 import '../../services/compass_service.dart';

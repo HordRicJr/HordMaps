@@ -40,7 +40,7 @@ class ThemeProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Erreur lors du chargement du thème: $e');
+      debugPrint('Erreur lors du chargement du thème: $e');
     }
   }
 
@@ -64,7 +64,7 @@ class ThemeProvider extends ChangeNotifier {
 
       await prefs.setInt(_themeKey, themeIndex);
     } catch (e) {
-      print('Erreur lors de la sauvegarde du thème: $e');
+      debugPrint('Erreur lors de la sauvegarde du thème: $e');
     }
   }
 

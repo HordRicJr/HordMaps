@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 class QuickActionCard extends StatefulWidget {
   final IconData icon;
@@ -39,10 +40,10 @@ class _QuickActionCardState extends State<QuickActionCard> {
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: widget.color.withOpacity(0.2), width: 1),
+            border: Border.all(color: widget.color.withCustomOpacity(0.2), width: 1),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.1),
+                color: widget.color.withCustomOpacity(0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -54,7 +55,7 @@ class _QuickActionCardState extends State<QuickActionCard> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.1),
+                  color: widget.color.withCustomOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(widget.icon, color: widget.color, size: 24),
@@ -72,7 +73,7 @@ class _QuickActionCardState extends State<QuickActionCard> {
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.color?.withOpacity(0.7),
+                  ).textTheme.bodySmall?.color?.withCustomOpacity(0.7),
                 ),
               ),
             ],

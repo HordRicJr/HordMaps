@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class LocationButton extends StatefulWidget {
   final VoidCallback onPressed;
@@ -84,7 +85,7 @@ class _LocationButtonState extends State<LocationButton>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withCustomOpacity(0.15),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -119,7 +120,7 @@ class _LocationButtonState extends State<LocationButton>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withCustomOpacity(0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

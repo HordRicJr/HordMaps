@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/user_service.dart';
 import 'modern_home_page.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 class UserSetupScreen extends StatefulWidget {
   const UserSetupScreen({super.key});
@@ -73,7 +74,7 @@ class _UserSetupScreenState extends State<UserSetupScreen> {
           width: 120,
           height: 120,
           decoration: BoxDecoration(
-            color: const Color(0xFF4CAF50).withOpacity(0.1),
+            color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Center(

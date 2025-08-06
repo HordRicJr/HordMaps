@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
+import '../../shared/extensions/color_extensions.dart';
 
 /// Service de notifications pour la navigation
 class NavigationNotificationService extends ChangeNotifier {
@@ -312,9 +312,9 @@ class NavigationNotificationService extends ChangeNotifier {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withCustomOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    border: Border.all(color: Colors.blue.withCustomOpacity(0.3)),
                   ),
                   child: Row(
                     children: [

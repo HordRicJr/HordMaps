@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../search/providers/search_provider.dart';
+import '../../../../shared/extensions/color_extensions.dart';
 
 class SearchResultsSheet extends StatelessWidget {
   final List<SearchResult> results;
@@ -22,7 +23,7 @@ class SearchResultsSheet extends StatelessWidget {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withCustomOpacity(0.1),
                 blurRadius: 20,
                 offset: const Offset(0, -4),
               ),
@@ -104,7 +105,7 @@ class SearchResultsSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withCustomOpacity(0.2),
                     width: 1,
                   ),
                   borderRadius: BorderRadius.circular(16),
@@ -115,7 +116,7 @@ class SearchResultsSheet extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        color: Theme.of(context).primaryColor.withCustomOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -162,7 +163,7 @@ class SearchResultsSheet extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: Theme.of(
                                 context,
-                              ).primaryColor.withOpacity(0.1),
+                              ).primaryColor.withCustomOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(

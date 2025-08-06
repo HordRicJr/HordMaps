@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:math' as math;
+import '../../../../shared/extensions/color_extensions.dart';
 
 /// Service pour la simulation d'effets 3D sur la carte
 class Map3DService extends ChangeNotifier {
@@ -91,7 +92,7 @@ class Map3DService extends ChangeNotifier {
               width: 12,
               height: height,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withCustomOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -121,7 +122,7 @@ class Map3DService extends ChangeNotifier {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.white.withOpacity(0.6), Colors.transparent],
+                  colors: [Colors.white.withCustomOpacity(0.6), Colors.transparent],
                 ),
               ),
             ),
@@ -175,7 +176,7 @@ class Map3DService extends ChangeNotifier {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
-            colors: [Colors.brown.withOpacity(0.3), Colors.transparent],
+            colors: [Colors.brown.withCustomOpacity(0.3), Colors.transparent],
           ),
         ),
         child: Center(
@@ -221,7 +222,7 @@ class Map3DService extends ChangeNotifier {
         Polyline(
           points: points,
           strokeWidth: 2.0,
-          color: const Color.fromRGBO(121, 85, 72, 1).withOpacity(0.6),
+          color: const Color.fromRGBO(121, 85, 72, 1).withCustomOpacity(0.6),
           pattern: const StrokePattern.dotted(), // Ligne pointillée
         ),
       );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'dart:math' as math;
+import '../../shared/extensions/color_extensions.dart';
 
 /// Modèle d'un niveau de bâtiment
 class BuildingLevel {
@@ -165,7 +166,7 @@ class IndoorMappingService extends ChangeNotifier {
 
   /// Génère les polygones pour le niveau actuel
   List<Polygon> getCurrentLevelPolygons() {
-    final currentLevel = this.currentBuildingLevel;
+    final currentLevel = currentBuildingLevel;
     if (currentLevel == null) return [];
 
     final polygons = <Polygon>[];
@@ -175,7 +176,7 @@ class IndoorMappingService extends ChangeNotifier {
       polygons.add(
         Polygon(
           points: room.polygon,
-          color: _getRoomColor(room.type).withOpacity(0.3),
+          color: _getRoomColor(room.type).withCustomOpacity(0.3),
           borderColor: _getRoomColor(room.type),
           borderStrokeWidth: 2.0,
           label: room.name,
@@ -188,7 +189,7 @@ class IndoorMappingService extends ChangeNotifier {
 
   /// Génère les polylignes pour le niveau actuel
   List<Polyline> getCurrentLevelPaths() {
-    final currentLevel = this.currentBuildingLevel;
+    final currentLevel = currentBuildingLevel;
     if (currentLevel == null) return [];
 
     final polylines = <Polyline>[];

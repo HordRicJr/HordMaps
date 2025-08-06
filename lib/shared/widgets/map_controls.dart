@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class MapControls extends StatelessWidget {
   final VoidCallback onZoomIn;
@@ -28,7 +29,7 @@ class MapControls extends StatelessWidget {
             Container(
               width: 48,
               height: 1,
-              color: Colors.grey.withOpacity(0.3),
+              color: Colors.grey.withCustomOpacity(0.3),
             ),
 
             // Bouton Zoom Out
@@ -70,7 +71,7 @@ class MapControls extends StatelessWidget {
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withCustomOpacity(0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),

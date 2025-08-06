@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 class ShareService {
   static const String _appName = 'HordMaps';
@@ -148,7 +149,7 @@ $routeInfo
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withCustomOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

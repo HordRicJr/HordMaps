@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../shared/services/poi_service.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -353,7 +354,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                        color: Colors.black.withCustomOpacity(isDark ? 0.3 : 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -476,7 +477,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            color: Colors.black.withCustomOpacity(isDark ? 0.3 : 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -488,7 +489,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: const Color(0xFF4CAF50).withOpacity(0.1),
+            color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -525,7 +526,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    color: const Color(0xFF4CAF50).withCustomOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

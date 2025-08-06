@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../shared/extensions/color_extensions.dart';
 
 import '../services/advanced_location_service.dart';
 
@@ -94,7 +95,7 @@ class _PlaceCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: _getCategoryColor().withOpacity(0.1),
+                      color: _getCategoryColor().withCustomOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
@@ -110,7 +111,7 @@ class _PlaceCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: Colors.orange.withCustomOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -205,7 +206,7 @@ class _PlaceCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: _getCategoryColor().withOpacity(0.1),
+                    color: _getCategoryColor().withCustomOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -365,7 +366,7 @@ class _DetailRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withCustomOpacity(0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(icon, size: 16, color: color),

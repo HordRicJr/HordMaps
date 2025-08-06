@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import '../../shared/services/offline_service.dart';
+import '../../../shared/extensions/color_extensions.dart';
 
 /// Classe pour représenter le progrès de téléchargement
 class DownloadProgress {
@@ -28,7 +29,7 @@ class DownloadProgress {
 
   double get progress => totalTiles > 0 ? downloadedTiles / totalTiles : 0.0;
 
-  String get progressText => '${downloadedTiles}/${totalTiles} tuiles';
+  String get progressText => '$downloadedTiles/$totalTiles tuiles';
 
   String get sizeText =>
       '${sizeDownloaded.toStringAsFixed(1)}/${totalSize.toStringAsFixed(1)} MB';
@@ -223,7 +224,7 @@ class _OfflineMapScreenState extends State<OfflineMapScreen>
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withCustomOpacity(0.1),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(12),
                   bottomRight: Radius.circular(12),

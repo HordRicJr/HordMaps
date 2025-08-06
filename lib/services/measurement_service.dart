@@ -27,8 +27,8 @@ class MeasurementService extends ChangeNotifier {
   static const Distance _distance = Distance();
 
   MeasurementMode _currentMode = MeasurementMode.none;
-  List<LatLng> _currentPoints = [];
-  List<MeasurementPoint> _measurementPoints = [];
+  final List<LatLng> _currentPoints = [];
+  final List<MeasurementPoint> _measurementPoints = [];
   double _currentDistance = 0.0;
   double _currentArea = 0.0;
 
