@@ -18,6 +18,15 @@ class CacheService extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  static SharedPreferences get prefs {
+    if (_prefs == null) {
+      throw StateError(
+        'CacheService not initialized. Call CacheService.initialize() first.',
+      );
+    }
+    return _prefs!;
+  }
+
   // Cache des lieux proches
   static const String _nearbyPlacesKey = 'nearby_places';
   static const String _lastLocationKey = 'last_location';
@@ -40,10 +49,10 @@ class CacheService extends ChangeNotifier {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
 
-      await _prefs?.setString(_nearbyPlacesKey, jsonEncode(cacheData));
-      await _prefs?.setDouble('${_lastLocationKey}_lat', latitude);
-      await _prefs?.setDouble('${_lastLocationKey}_lng', longitude);
-      await _prefs?.setInt(
+      await prefs.setString(_nearbyPlacesKey, jsonEncode(cacheData));
+      await prefs.setDouble('${_lastLocationKey}_lat', latitude);
+      await prefs.setDouble('${_lastLocationKey}_lng', longitude);
+      await prefs.setInt(
         _cacheTimestampKey,
         DateTime.now().millisecondsSinceEpoch,
       );
@@ -60,7 +69,7 @@ class CacheService extends ChangeNotifier {
     double longitude,
   ) async {
     try {
-      final cachedDataString = _prefs?.getString(_nearbyPlacesKey);
+      final cachedDataString = prefs.getString(_nearbyPlacesKey);
       if (cachedDataString == null) return null;
 
       final cachedData = jsonDecode(cachedDataString) as Map<String, dynamic>;
@@ -99,13 +108,86 @@ class CacheService extends ChangeNotifier {
   /// Cache des événements récents
   static const String _recentEventsKey = 'recent_events';
 
+  // Cache des routes
+  static const String _routesKey = 'cached_routes';
+
+  /// Sauvegarde une route dans le cache
+  Future<void> saveRoute(String cacheKey, dynamic route) async {
+    try {
+      final routesData = prefs.getString(_routesKey);
+      Map<String, dynamic> routes = {};
+
+      if (routesData != null) {
+        routes = Map<String, dynamic>.from(jsonDecode(routesData));
+      }
+
+      routes[cacheKey] = {
+        'route': route,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+
+      await prefs.setString(_routesKey, jsonEncode(routes));
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erreur sauvegarde route: $e');
+    }
+  }
+
+  /// Récupère une route depuis le cache
+  Future<dynamic> getRoute(String cacheKey) async {
+    try {
+      final routesData = prefs.getString(_routesKey);
+      if (routesData == null) return null;
+
+      final routes = Map<String, dynamic>.from(jsonDecode(routesData));
+      final routeData = routes[cacheKey];
+
+      if (routeData == null) return null;
+
+      final timestamp = routeData['timestamp'] as int;
+      final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+
+      // Cache valide pendant 15 minutes
+      if (age > Duration(minutes: 15).inMilliseconds) {
+        return null;
+      }
+
+      return routeData['route'];
+    } catch (e) {
+      debugPrint('Erreur récupération route: $e');
+      return null;
+    }
+  }
+
+  /// Sauvegarde des données génériques
+  Future<void> saveData(String key, dynamic data) async {
+    try {
+      await prefs.setString(key, jsonEncode(data));
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erreur sauvegarde données $key: $e');
+    }
+  }
+
+  /// Récupère des données génériques
+  Future<dynamic> getData(String key) async {
+    try {
+      final dataString = prefs.getString(key);
+      if (dataString == null) return null;
+      return jsonDecode(dataString);
+    } catch (e) {
+      debugPrint('Erreur récupération données $key: $e');
+      return null;
+    }
+  }
+
   Future<void> cacheRecentEvents(List<Map<String, dynamic>> events) async {
     try {
       final cacheData = {
         'events': events,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
-      await _prefs?.setString(_recentEventsKey, jsonEncode(cacheData));
+      await prefs.setString(_recentEventsKey, jsonEncode(cacheData));
       notifyListeners();
     } catch (e) {
       debugPrint('Erreur lors de la sauvegarde des événements: $e');
@@ -114,7 +196,7 @@ class CacheService extends ChangeNotifier {
 
   Future<List<Map<String, dynamic>>?> getCachedRecentEvents() async {
     try {
-      final cachedDataString = _prefs?.getString(_recentEventsKey);
+      final cachedDataString = prefs.getString(_recentEventsKey);
       if (cachedDataString == null) return null;
 
       final cachedData = jsonDecode(cachedDataString) as Map<String, dynamic>;
@@ -149,7 +231,7 @@ class CacheService extends ChangeNotifier {
         'places': places,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
-      await _prefs?.setString(
+      await prefs.setString(
         '${_categoriesKey}_$categoryId',
         jsonEncode(cacheData),
       );
@@ -163,9 +245,7 @@ class CacheService extends ChangeNotifier {
     String categoryId,
   ) async {
     try {
-      final cachedDataString = _prefs?.getString(
-        '${_categoriesKey}_$categoryId',
-      );
+      final cachedDataString = prefs.getString('${_categoriesKey}_$categoryId');
       if (cachedDataString == null) return null;
 
       final cachedData = jsonDecode(cachedDataString) as Map<String, dynamic>;
@@ -192,15 +272,15 @@ class CacheService extends ChangeNotifier {
   Future<void> saveUserPreference(String key, dynamic value) async {
     try {
       if (value is String) {
-        await _prefs?.setString('user_pref_$key', value);
+        await prefs.setString('user_pref_$key', value);
       } else if (value is int) {
-        await _prefs?.setInt('user_pref_$key', value);
+        await prefs.setInt('user_pref_$key', value);
       } else if (value is double) {
-        await _prefs?.setDouble('user_pref_$key', value);
+        await prefs.setDouble('user_pref_$key', value);
       } else if (value is bool) {
-        await _prefs?.setBool('user_pref_$key', value);
+        await prefs.setBool('user_pref_$key', value);
       } else {
-        await _prefs?.setString('user_pref_$key', jsonEncode(value));
+        await prefs.setString('user_pref_$key', jsonEncode(value));
       }
       notifyListeners();
     } catch (e) {
@@ -213,15 +293,15 @@ class CacheService extends ChangeNotifier {
       final prefKey = 'user_pref_$key';
 
       if (T == String) {
-        return _prefs?.getString(prefKey) as T? ?? defaultValue;
+        return prefs.getString(prefKey) as T? ?? defaultValue;
       } else if (T == int) {
-        return _prefs?.getInt(prefKey) as T? ?? defaultValue;
+        return prefs.getInt(prefKey) as T? ?? defaultValue;
       } else if (T == double) {
-        return _prefs?.getDouble(prefKey) as T? ?? defaultValue;
+        return prefs.getDouble(prefKey) as T? ?? defaultValue;
       } else if (T == bool) {
-        return _prefs?.getBool(prefKey) as T? ?? defaultValue;
+        return prefs.getBool(prefKey) as T? ?? defaultValue;
       } else {
-        final stringValue = _prefs?.getString(prefKey);
+        final stringValue = prefs.getString(prefKey);
         if (stringValue != null) {
           return jsonDecode(stringValue) as T;
         }
@@ -236,14 +316,14 @@ class CacheService extends ChangeNotifier {
   /// Nettoyage du cache
   Future<void> clearCache() async {
     try {
-      await _prefs?.remove(_nearbyPlacesKey);
-      await _prefs?.remove(_recentEventsKey);
+      await prefs.remove(_nearbyPlacesKey);
+      await prefs.remove(_recentEventsKey);
 
       // Supprimer tous les caches de catégories
-      final keys = _prefs?.getKeys() ?? <String>{};
+      final keys = prefs.getKeys();
       for (final key in keys) {
         if (key.startsWith(_categoriesKey)) {
-          await _prefs?.remove(key);
+          await prefs.remove(key);
         }
       }
 
@@ -302,7 +382,7 @@ class CacheService extends ChangeNotifier {
       }
 
       final jsonList = routes.map((r) => r.toJson()).toList();
-      await _prefs?.setString(_recentRoutesKey, jsonEncode(jsonList));
+      await prefs.setString(_recentRoutesKey, jsonEncode(jsonList));
     } catch (e) {
       debugPrint('Erreur sauvegarde route récente: $e');
     }
@@ -310,7 +390,7 @@ class CacheService extends ChangeNotifier {
 
   static Future<List<RecentRoute>> getRecentRoutes() async {
     try {
-      final jsonString = _prefs?.getString(_recentRoutesKey);
+      final jsonString = prefs.getString(_recentRoutesKey);
 
       if (jsonString == null) return [];
 
@@ -325,7 +405,7 @@ class CacheService extends ChangeNotifier {
   /// Méthodes génériques de cache pour l'OSM Routing Service
   Future<Map<String, dynamic>?> getFromCache(String key) async {
     try {
-      final cachedDataString = _prefs?.getString('cache_$key');
+      final cachedDataString = prefs.getString('cache_$key');
       if (cachedDataString == null) return null;
 
       final cachedData = jsonDecode(cachedDataString) as Map<String, dynamic>;
@@ -336,7 +416,7 @@ class CacheService extends ChangeNotifier {
       const routeCacheValidityMs = 15 * 60 * 1000; // 15 minutes
 
       if (cacheAge > routeCacheValidityMs) {
-        await _prefs?.remove('cache_$key');
+        await prefs.remove('cache_$key');
         return null;
       }
 
@@ -355,7 +435,7 @@ class CacheService extends ChangeNotifier {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
 
-      await _prefs?.setString('cache_$key', jsonEncode(cacheData));
+      await prefs.setString('cache_$key', jsonEncode(cacheData));
       notifyListeners();
     } catch (e) {
       debugPrint('Erreur lors de la sauvegarde du cache: $e');

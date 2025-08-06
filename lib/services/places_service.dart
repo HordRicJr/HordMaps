@@ -96,11 +96,11 @@ class PlacesService {
         final data = json.decode(response.body);
         return _parseOverpassResponse(data, latitude, longitude);
       } else {
-        print('Erreur API Overpass: ${response.statusCode}');
+        debugPrint('Erreur API Overpass: ${response.statusCode}');
         return _getFallbackPlaces(latitude, longitude);
       }
     } catch (e) {
-      print('Erreur lors de la récupération des lieux: $e');
+      debugPrint('Erreur lors de la récupération des lieux: $e');
       return _getFallbackPlaces(latitude, longitude);
     }
   }
@@ -118,14 +118,19 @@ class PlacesService {
     List<String> queries = [];
 
     for (String placeType in _placeTypes.keys) {
-      Map<String, dynamic> typeInfo = _placeTypes[placeType]!;
-      String key = typeInfo.keys.first;
-      String value = typeInfo[key];
+      Map<String, dynamic>? typeInfo = _placeTypes[placeType];
+      if (typeInfo == null) continue;
 
-      if (key != 'icon' && key != 'label') {
-        queries.add('node["$key"="$value"](around:$radiusM,$lat,$lon);');
-        queries.add('way["$key"="$value"](around:$radiusM,$lat,$lon);');
-      }
+      String? key = typeInfo.keys
+          .where((k) => k != 'icon' && k != 'label')
+          .firstOrNull;
+      if (key == null) continue;
+
+      String? value = typeInfo[key];
+      if (value == null) continue;
+
+      queries.add('node["$key"="$value"](around:$radiusM,$lat,$lon);');
+      queries.add('way["$key"="$value"](around:$radiusM,$lat,$lon);');
     }
 
     return '''
@@ -195,7 +200,7 @@ out center meta;
             'openingHours': tags['opening_hours'] ?? '',
           });
         } catch (e) {
-          print('Erreur lors du parsing d\'un élément: $e');
+          debugPrint('Erreur lors du parsing d\'un élément: $e');
           continue;
         }
       }
@@ -331,7 +336,7 @@ out center meta;
         return _parseNominatimResponse(data, nearLat, nearLon);
       }
     } catch (e) {
-      print('Erreur lors de la recherche: $e');
+      debugPrint('Erreur lors de la recherche: $e');
     }
 
     return [];

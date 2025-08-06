@@ -1,5 +1,6 @@
 import 'package:latlong2/latlong.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class WeatherData {
   final double temperature;
@@ -131,7 +132,7 @@ class HordWeatherService {
         return WeatherData.fromJson(response.data);
       }
     } catch (e) {
-      print('Erreur lors de la récupération des données météo: $e');
+      debugPrint('Erreur lors de la récupération des données météo: $e');
     }
     return null;
   }
@@ -155,7 +156,7 @@ class HordWeatherService {
         return dailyData.map((json) => WeatherForecast.fromJson(json)).toList();
       }
     } catch (e) {
-      print('Erreur lors de la récupération des prévisions: $e');
+      debugPrint('Erreur lors de la récupération des prévisions: $e');
     }
     return [];
   }
@@ -183,7 +184,7 @@ class HordWeatherService {
         }
       }
     } catch (e) {
-      print('Erreur lors de la récupération des alertes: $e');
+      debugPrint('Erreur lors de la récupération des alertes: $e');
     }
     return [];
   }

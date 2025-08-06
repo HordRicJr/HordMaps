@@ -39,7 +39,9 @@ ${desc.isNotEmpty ? '$desc\n' : ''}
 ''';
 
     try {
-      await Share.share(shareText, subject: 'Localisation partagée - $name');
+      await SharePlus.instance.share(
+        ShareParams(text: shareText, subject: 'Localisation partagée - $name'),
+      );
     } catch (e) {
       debugPrint('Erreur partage localisation: $e');
       if (context != null && context.mounted) {
@@ -72,7 +74,9 @@ Position: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toString
 ''';
 
     try {
-      await Share.share(shareText, subject: 'POI partagé - $name');
+      await SharePlus.instance.share(
+        ShareParams(text: shareText, subject: 'POI partagé - $name'),
+      );
     } catch (e) {
       debugPrint('Erreur partage POI: $e');
       if (context != null && context.mounted) {
@@ -122,9 +126,11 @@ $routeInfo
 ''';
 
     try {
-      await Share.share(
-        shareText,
-        subject: 'Itinéraire partagé - $startLocation → $endLocation',
+      await SharePlus.instance.share(
+        ShareParams(
+          text: shareText,
+          subject: 'Itinéraire partagé - $startLocation → $endLocation',
+        ),
       );
     } catch (e) {
       debugPrint('Erreur partage itinéraire: $e');
@@ -165,7 +171,14 @@ $routeInfo
             size: size,
             gapless: false,
             backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
+            eyeStyle: const QrEyeStyle(
+              eyeShape: QrEyeShape.square,
+              color: Colors.black,
+            ),
+            dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: Colors.black,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -239,7 +252,9 @@ Téléchargez $_appName maintenant !
 ''';
 
     try {
-      await Share.share(shareText, subject: 'Découvrez $_appName');
+      await SharePlus.instance.share(
+        ShareParams(text: shareText, subject: 'Découvrez $_appName'),
+      );
     } catch (e) {
       debugPrint('Erreur partage app: $e');
       if (context != null && context.mounted) {

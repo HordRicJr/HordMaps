@@ -559,11 +559,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _shareApp() {
-    Share.share(
-      'Découvrez HordMaps, l\'alternative intelligente à Google Maps ! 🗺️\n\n'
-      'Téléchargez l\'application pour une navigation moderne et complète.\n\n'
-      'Plus d\'infos : assounrodrigue5@gmail.com',
-      subject: 'HordMaps - Navigation intelligente',
+    SharePlus.instance.share(
+      ShareParams(
+        text:
+            'Découvrez HordMaps, l\'alternative intelligente à Google Maps ! 🗺️\n\n'
+            'Téléchargez l\'application pour une navigation moderne et complète.\n\n'
+            'Plus d\'infos : assounrodrigue5@gmail.com',
+        subject: 'HordMaps - Navigation intelligente',
+      ),
     );
   }
 

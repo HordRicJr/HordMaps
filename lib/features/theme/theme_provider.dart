@@ -150,7 +150,9 @@ class ThemeProvider extends ChangeNotifier {
               isSelected: themeProvider._themeMode == ThemeMode.system,
               onTap: () async {
                 await themeProvider.setSystemMode();
-                Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               },
             ),
             _ThemeOption(
@@ -160,7 +162,9 @@ class ThemeProvider extends ChangeNotifier {
               isSelected: themeProvider._themeMode == ThemeMode.light,
               onTap: () async {
                 await themeProvider.setLightMode();
-                Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               },
             ),
             _ThemeOption(
@@ -170,7 +174,9 @@ class ThemeProvider extends ChangeNotifier {
               isSelected: themeProvider._themeMode == ThemeMode.dark,
               onTap: () async {
                 await themeProvider.setDarkMode();
-                Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               },
             ),
             const SizedBox(height: 20),

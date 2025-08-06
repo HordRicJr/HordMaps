@@ -314,7 +314,9 @@ class NavigationNotificationService extends ChangeNotifier {
                   decoration: BoxDecoration(
                     color: Colors.blue.withCustomOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withCustomOpacity(0.3)),
+                    border: Border.all(
+                      color: Colors.blue.withCustomOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -355,7 +357,9 @@ class NavigationNotificationService extends ChangeNotifier {
               ElevatedButton(
                 onPressed: () async {
                   await instance.stopNavigation();
-                  Navigator.of(context).pop(true);
+                  if (context.mounted) {
+                    Navigator.of(context).pop(true);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,

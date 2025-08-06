@@ -8,6 +8,10 @@ import 'features/map/providers/map_provider.dart';
 import 'features/search/providers/search_provider.dart';
 import 'features/navigation/providers/providers.dart';
 import 'features/theme/theme_provider.dart';
+import 'controllers/app_controller.dart';
+import 'controllers/route_controller.dart';
+import 'controllers/search_controller.dart' as search;
+import 'controllers/favorites_controller.dart';
 import 'services/user_service.dart';
 import 'services/cache_service.dart';
 import 'shared/services/poi_service.dart';
@@ -15,6 +19,8 @@ import 'shared/services/offline_service.dart';
 import 'shared/services/storage_service.dart';
 import 'screens/user_setup_screen.dart';
 import 'screens/main_navigation_screen.dart';
+import 'views/route_search_view.dart';
+import 'views/navigation_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +43,13 @@ void main() async {
   // Initialiser le storage service
   await StorageService.initialize();
 
+  // Initialiser l'AppController MVC
+  await AppController.instance.initializeApp();
+
+  // Initialiser les autres contrôleurs MVC
+  await search.SearchController.instance.initialize();
+  await FavoritesController.instance.initialize();
+
   runApp(const HordMapsApp());
 }
 
@@ -47,6 +60,13 @@ class HordMapsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Contrôleurs MVC
+        ChangeNotifierProvider(create: (_) => AppController.instance),
+        ChangeNotifierProvider(create: (_) => RouteController.instance),
+        ChangeNotifierProvider(create: (_) => search.SearchController.instance),
+        ChangeNotifierProvider(create: (_) => FavoritesController.instance),
+
+        // Providers existants
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
         ChangeNotifierProvider(create: (_) => CacheService.instance),
@@ -55,8 +75,15 @@ class HordMapsApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) {
             final provider = NavigationProvider();
-            // Initialisation différée sans bloquer la création
-            provider.initialize();
+            // Initialisation différée après le build complet
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              // Connecter NavigationProvider à AppController
+              AppController.instance.setNavigationProvider(provider);
+
+              provider.initialize().catchError((e) {
+                debugPrint('Erreur initialisation NavigationProvider: $e');
+              });
+            });
             return provider;
           },
         ),
@@ -70,6 +97,13 @@ class HordMapsApp extends StatelessWidget {
           theme: _buildLightTheme(),
           darkTheme: _buildDarkTheme(),
           themeMode: themeProvider.themeMode,
+
+          // Routes pour l'architecture MVC
+          routes: {
+            '/route-search': (context) => const RouteSearchView(),
+            '/navigation': (context) => const NavigationView(),
+          },
+
           home: FutureBuilder<bool>(
             future: _checkUserProfile(),
             builder: (context, snapshot) {

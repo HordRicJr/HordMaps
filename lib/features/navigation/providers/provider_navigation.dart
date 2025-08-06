@@ -449,8 +449,9 @@ class NavigationProvider extends ChangeNotifier {
   void _checkForRerouting() {
     if (!_enableAutoReroute ||
         _currentLocation == null ||
-        _currentRoute == null)
+        _currentRoute == null) {
       return;
+    }
 
     // Calculer la distance minimale à la route
     double minDistanceToRoute = double.infinity;
@@ -470,8 +471,9 @@ class NavigationProvider extends ChangeNotifier {
 
   /// Recalcule automatiquement la route
   Future<void> _recalculateRoute() async {
-    if (_currentLocation == null || _endPoint == null || _isRecalculating)
+    if (_currentLocation == null || _endPoint == null || _isRecalculating) {
       return;
+    }
 
     _isRecalculating = true;
     notifyListeners();

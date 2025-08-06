@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:async';
@@ -46,7 +47,9 @@ class LocationService {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
 
       // Sauvegarder la position
@@ -54,7 +57,7 @@ class LocationService {
 
       return position;
     } catch (e) {
-      print('Erreur géolocalisation: $e');
+      debugPrint('Erreur géolocalisation: $e');
       return null;
     }
   }
@@ -93,11 +96,11 @@ class LocationService {
               _saveLastLocation(position);
             },
             onError: (error) {
-              print('Erreur suivi position: $error');
+              debugPrint('Erreur suivi position: $error');
             },
           );
     } catch (e) {
-      print('Erreur démarrage suivi: $e');
+      debugPrint('Erreur démarrage suivi: $e');
     }
   }
 

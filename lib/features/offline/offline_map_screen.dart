@@ -724,7 +724,7 @@ class _OfflineMapScreenState extends State<OfflineMapScreen>
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && mounted) {
       final offlineService = context.read<OfflineService>();
       await offlineService.removeRegion(region.id);
       await _loadCacheStats();
@@ -871,14 +871,16 @@ class _OfflineMapScreenState extends State<OfflineMapScreen>
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               final offlineService = context.read<OfflineService>();
               await offlineService.clearCache();
-              Navigator.pop(context);
-              await _loadCacheStats();
               if (mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('Cache vidé')));
+                navigator.pop();
+                await _loadCacheStats();
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(content: Text('Cache vidé')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

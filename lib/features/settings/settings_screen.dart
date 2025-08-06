@@ -364,10 +364,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              final navigator = Navigator.of(context);
+              final notificationProvider = context.read<NotificationProvider>();
+
+              if (mounted) {
+                navigator.pop();
+              }
               await _clearCache();
               if (mounted) {
-                context.read<NotificationProvider>().showSuccess(
+                notificationProvider.showSuccess(
                   'Cache vidé',
                   'Les données temporaires ont été supprimées',
                 );
@@ -416,16 +421,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       };
 
       // Partager les données
-      await Share.share(
-        'Mes données HordMaps:\n${exportData.toString()}',
-        subject: 'Export HordMaps',
+      await SharePlus.instance.share(
+        ShareParams(
+          text: 'Mes données HordMaps:\n${exportData.toString()}',
+          subject: 'Export HordMaps',
+        ),
       );
-      await Share.share(
-        'Données HordMaps exportées le ${DateTime.now().toLocal()}\n'
-        'Profil: ${userData['name'] ?? 'Utilisateur'}\n'
-        'Email: ${userData['email'] ?? 'Non défini'}\n'
-        'Données complètes en JSON disponibles.',
-        subject: 'Export HordMaps - ${userData['name'] ?? 'Utilisateur'}',
+      await SharePlus.instance.share(
+        ShareParams(
+          text:
+              'Données HordMaps exportées le ${DateTime.now().toLocal()}\n'
+              'Profil: ${userData['name'] ?? 'Utilisateur'}\n'
+              'Email: ${userData['email'] ?? 'Non défini'}\n'
+              'Données complètes en JSON disponibles.',
+          subject: 'Export HordMaps - ${userData['name'] ?? 'Utilisateur'}',
+        ),
       );
 
       if (mounted) {
@@ -585,10 +595,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              final navigator = Navigator.of(context);
+              final notificationProvider = context.read<NotificationProvider>();
+
+              if (mounted) {
+                navigator.pop();
+              }
               await _resetSettings();
               if (mounted) {
-                context.read<NotificationProvider>().showSuccess(
+                notificationProvider.showSuccess(
                   'Paramètres réinitialisés',
                   'Tous les paramètres ont été remis par défaut',
                 );

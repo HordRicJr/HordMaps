@@ -163,7 +163,7 @@ class MeasurementTools extends StatefulWidget {
 
 class _MeasurementToolsState extends State<MeasurementTools> {
   String _mode = 'distance'; // distance, area
-  List<LatLng> _points = [];
+  final List<LatLng> _points = [];
   double? _result;
 
   @override
@@ -291,10 +291,10 @@ class _MeasurementToolsState extends State<MeasurementTools> {
 class MeasurementProvider extends ChangeNotifier {
   bool _isActive = false;
   String _mode = 'distance';
-  List<LatLng> _points = [];
-  List<Marker> _markers = [];
-  List<Polyline> _lines = [];
-  List<Polygon> _polygons = [];
+  final List<LatLng> _points = [];
+  final List<Marker> _markers = [];
+  final List<Polyline> _lines = [];
+  final List<Polygon> _polygons = [];
   double? _result;
 
   // Getters

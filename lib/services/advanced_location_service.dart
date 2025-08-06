@@ -54,8 +54,10 @@ class AdvancedLocationService extends ChangeNotifier {
 
       // Obtenir la position actuelle
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
       );
 
       _updatePosition(position);

@@ -42,15 +42,36 @@ class _ModernHomePageState extends State<ModernHomePage>
       vsync: this,
     );
     _animationController.forward();
-    _initializeServices();
+
+    // Initialisation différée après le premier frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializeServices();
+      }
+    });
   }
 
   Future<void> _initializeServices() async {
     try {
-      await VoiceGuidanceService().initialize();
-      await NavigationNotificationService().initialize();
-      AppLifecycleService().initialize();
+      // Initialisation séquentielle avec délais pour éviter la surcharge
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Initialisation de base en premier
       await _getCurrentLocation();
+
+      // Services secondaires avec délai
+      await Future.delayed(const Duration(milliseconds: 200));
+      VoiceGuidanceService().initialize().catchError((e) {
+        debugPrint('Erreur VoiceGuidanceService: $e');
+      });
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      NavigationNotificationService().initialize().catchError((e) {
+        debugPrint('Erreur NavigationNotificationService: $e');
+      });
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      AppLifecycleService().initialize();
     } catch (e) {
       debugPrint('Erreur lors de l\'initialisation des services: $e');
     }
@@ -82,7 +103,9 @@ class _ModernHomePageState extends State<ModernHomePage>
       }
 
       _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
 
       await _loadNearbyPlaces();
@@ -99,15 +122,22 @@ class _ModernHomePageState extends State<ModernHomePage>
     }
 
     try {
-      // Utiliser le vrai service de lieux avec la position GPS
-      List<Map<String, dynamic>> places = await PlacesService.getNearbyPlaces(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
-        radiusKm: 2.0,
-        maxResults: 15,
-      );
+      // Timeout pour éviter les blocages
+      final places =
+          await PlacesService.getNearbyPlaces(
+            latitude: _currentPosition!.latitude,
+            longitude: _currentPosition!.longitude,
+            radiusKm: 2.0,
+            maxResults: 15,
+          ).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('Timeout lors de la récupération des lieux');
+              return <Map<String, dynamic>>[];
+            },
+          );
 
-      if (places.isNotEmpty) {
+      if (mounted && places.isNotEmpty) {
         setState(() {
           _nearbyPlaces = places;
         });
@@ -122,6 +152,9 @@ class _ModernHomePageState extends State<ModernHomePage>
   }
 
   void _generateMockNearbyPlaces() {
+    // Vérifier que le widget est toujours monté avant de faire setState
+    if (!mounted) return;
+
     // Lieux de secours si la géolocalisation échoue
     setState(() {
       _nearbyPlaces = [
@@ -675,9 +708,8 @@ class _ModernHomePageState extends State<ModernHomePage>
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: (category['color'] as Color).withCustomOpacity(
-                                  0.2,
-                                ),
+                                color: (category['color'] as Color)
+                                    .withCustomOpacity(0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
