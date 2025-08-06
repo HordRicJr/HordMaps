@@ -46,6 +46,10 @@ class MainActivity: FlutterActivity() {
                     requestOverlayPermission()
                     result.success(true)
                 }
+                "openOverlaySettings" -> {
+                    openOverlaySettings()
+                    result.success(true)
+                }
                 "checkOverlayPermission" -> {
                     result.success(hasOverlayPermission())
                 }
@@ -117,6 +121,14 @@ class MainActivity: FlutterActivity() {
                         putExtra("eta", eta)
                     }
                     startService(intent)
+                    result.success(true)
+                }
+                "openOverlaySettings" -> {
+                    openOverlaySettings()
+                    result.success(true)
+                }
+                "forceOverlayPermission" -> {
+                    forceOverlayPermission()
                     result.success(true)
                 }
                 else -> {
@@ -197,6 +209,61 @@ class MainActivity: FlutterActivity() {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     startActivity(fallbackIntent)
+                }
+            }
+        }
+    }
+
+    private fun openOverlaySettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                // Fallback: ouvrir les paramètres de l'application
+                val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(fallbackIntent)
+            }
+        }
+    }
+
+    private fun forceOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                // Essayer d'ouvrir directement les paramètres de superposition
+                val intent1 = Intent("android.settings.action.MANAGE_OVERLAY_PERMISSION").apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent1)
+            } catch (e1: Exception) {
+                try {
+                    // Fallback 1: Paramètres système overlay
+                    val intent2 = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent2)
+                } catch (e2: Exception) {
+                    try {
+                        // Fallback 2: Paramètres application spécifiques
+                        val intent3 = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:$packageName")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(intent3)
+                    } catch (e3: Exception) {
+                        // Fallback 3: Paramètres généraux
+                        val intent4 = Intent(Settings.ACTION_SETTINGS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(intent4)
+                    }
                 }
             }
         }

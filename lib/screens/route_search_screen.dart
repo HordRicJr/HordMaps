@@ -63,37 +63,55 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
     // Suggestions basées sur la position actuelle ou des lieux communs
     final commonPlaces = [
       {
-        'name': 'Ma position actuelle',
-        'description': 'Utiliser votre position actuelle',
-        'icon': Icons.my_location,
-        'position': _currentPosition != null
-            ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-            : null,
-        'isCurrentLocation': true,
+      'name': 'Ma position actuelle',
+      'description': 'Utiliser votre position actuelle',
+      'icon': Icons.my_location,
+      'position': _currentPosition != null
+        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+        : null,
+      'isCurrentLocation': true,
       },
       {
-        'name': 'Centre-ville',
-        'description': 'Centre de la ville',
-        'icon': Icons.location_city,
-        'position': const LatLng(48.8566, 2.3522), // Paris par défaut
+      'name': 'Centre-ville (Lomé)',
+      'description': 'Centre de Lomé',
+      'icon': Icons.location_city,
+      'position': const LatLng(6.1319, 1.2228), // Lomé, Togo
       },
       {
-        'name': 'Aéroport',
-        'description': 'Aéroport principal',
-        'icon': Icons.flight,
-        'position': const LatLng(49.0097, 2.5479), // CDG
+      'name': 'Aéroport de Lomé',
+      'description': 'Aéroport international Gnassingbé Eyadéma',
+      'icon': Icons.flight,
+      'position': const LatLng(6.1659, 1.2545), // Lomé Airport
       },
       {
-        'name': 'Gare centrale',
-        'description': 'Gare principale',
-        'icon': Icons.train,
-        'position': const LatLng(48.8449, 2.3738), // Gare du Nord
+      'name': 'Gare routière de Lomé',
+      'description': 'Gare routière principale de Lomé',
+      'icon': Icons.directions_bus,
+      'position': const LatLng(6.1375, 1.2170), // Main bus station Lomé
       },
       {
-        'name': 'Hôpital principal',
-        'description': 'Centre hospitalier',
-        'icon': Icons.local_hospital,
-        'position': const LatLng(48.8534, 2.3488),
+      'name': 'Hôpital CHU Sylvanus Olympio',
+      'description': 'Centre hospitalier universitaire de Lomé',
+      'icon': Icons.local_hospital,
+      'position': const LatLng(6.1372, 1.2225), // CHU Sylvanus Olympio
+      },
+      {
+      'name': 'Université de Lomé',
+      'description': 'Campus universitaire principal',
+      'icon': Icons.school,
+      'position': const LatLng(6.1818, 1.2124), // Université de Lomé
+      },
+      {
+      'name': 'Plage de Lomé',
+      'description': 'Plage populaire de Lomé',
+      'icon': Icons.beach_access,
+      'position': const LatLng(6.1200, 1.2250), // Lomé Beach
+      },
+      {
+      'name': 'Marché de Lomé',
+      'description': 'Grand marché de Lomé',
+      'icon': Icons.storefront,
+      'position': const LatLng(6.1312, 1.2157), // Lomé Market
       },
     ];
 

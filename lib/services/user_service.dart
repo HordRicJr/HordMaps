@@ -143,4 +143,10 @@ class UserService {
     final p = await prefs;
     return !p.containsKey(_userNameKey);
   }
+
+  // Vérifier si l'utilisateur a un profil configuré
+  Future<bool> get hasUserProfileConfigured async {
+    final p = await prefs;
+    return p.containsKey(_userProfileKey) && p.containsKey(_userNameKey);
+  }
 }

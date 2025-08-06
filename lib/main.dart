@@ -13,7 +13,7 @@ import 'services/cache_service.dart';
 import 'shared/services/poi_service.dart';
 import 'shared/services/offline_service.dart';
 import 'shared/services/storage_service.dart';
-import 'screens/setup_screen.dart';
+import 'screens/user_setup_screen.dart';
 import 'screens/main_navigation_screen.dart';
 
 void main() async {
@@ -82,7 +82,7 @@ class HordMapsApp extends StatelessWidget {
               final hasProfile = snapshot.data ?? false;
               return hasProfile
                   ? const MainNavigationScreen()
-                  : const SetupScreen();
+                  : const UserSetupScreen();
             },
           ),
         ),

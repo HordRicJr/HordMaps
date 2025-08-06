@@ -149,11 +149,13 @@ flutter:
 
 # Configuration de l'icône de l'application avec hordmaps.png
 flutter_launcher_icons:
-  android: "ic_launcher"
+  android: true
   ios: true
   image_path: "assets/icons/hordmaps.png"
   remove_alpha_ios: true
   min_sdk_android: 21
+  adaptive_icon_background: "#4CAF50"
+  adaptive_icon_foreground: "assets/icons/hordmaps.png"
   web:
     generate: true
     image_path: "assets/icons/hordmaps.png"

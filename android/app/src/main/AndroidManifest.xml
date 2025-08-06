@@ -61,6 +61,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight">
         
+        <!-- Métadonnées pour Android 15 overlay permissions -->
+        <meta-data android:name="android.permission.SYSTEM_ALERT_WINDOW" android:value="true" />
+        <meta-data android:name="android.overlay.permission" android:value="SYSTEM_ALERT_WINDOW" />
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

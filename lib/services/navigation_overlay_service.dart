@@ -38,6 +38,7 @@ class NavigationOverlayService {
       await hideNavigationOverlay();
     }
 
+    if (!context.mounted) return;
     final overlay = Overlay.of(context);
 
     _currentOverlay = OverlayEntry(
@@ -69,6 +70,7 @@ class NavigationOverlayService {
     final realTimeService = RealTimeNavigationService.instance;
     if (!realTimeService.isNavigating) return;
 
+    if (!context.mounted) return;
     final overlay = Overlay.of(context);
 
     _currentOverlay = OverlayEntry(
@@ -151,6 +153,44 @@ class NavigationOverlayService {
       await _channel.invokeMethod('hideSystemOverlay');
     } catch (e) {
       debugPrint('Erreur masquage overlay système: $e');
+    }
+  }
+
+  /// Vérifie si la permission overlay est accordée
+  Future<bool> hasOverlayPermission() async {
+    try {
+      final result = await _channel.invokeMethod('hasOverlayPermission');
+      return result as bool? ?? false;
+    } catch (e) {
+      debugPrint('Erreur vérification permission overlay: $e');
+      return false;
+    }
+  }
+
+  /// Demande la permission overlay
+  Future<void> requestOverlayPermission() async {
+    try {
+      await _channel.invokeMethod('requestOverlayPermission');
+    } catch (e) {
+      debugPrint('Erreur demande permission overlay: $e');
+    }
+  }
+
+  /// Ouvre les paramètres overlay
+  Future<void> openOverlaySettings() async {
+    try {
+      await _channel.invokeMethod('openOverlaySettings');
+    } catch (e) {
+      debugPrint('Erreur ouverture paramètres overlay: $e');
+    }
+  }
+
+  /// Force l'ouverture des paramètres overlay (Android 15)
+  Future<void> forceOverlayPermission() async {
+    try {
+      await _channel.invokeMethod('forceOverlayPermission');
+    } catch (e) {
+      debugPrint('Erreur force permission overlay: $e');
     }
   }
 
@@ -244,7 +284,10 @@ class _DynamicNavigationOverlayState extends State<DynamicNavigationOverlay>
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.blue.withCustomOpacity(0.6), width: 2),
+              border: Border.all(
+                color: Colors.blue.withCustomOpacity(0.6),
+                width: 2,
+              ),
             ),
             child: _isMinimized
                 ? _buildMinimizedContent()

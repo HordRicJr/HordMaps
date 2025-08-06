@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../services/user_service.dart';
-import 'modern_home_page.dart';
+import 'main_navigation_screen.dart';
 import '../../shared/extensions/color_extensions.dart';
 
 class UserSetupScreen extends StatefulWidget {
@@ -12,55 +10,112 @@ class UserSetupScreen extends StatefulWidget {
   State<UserSetupScreen> createState() => _UserSetupScreenState();
 }
 
-class _UserSetupScreenState extends State<UserSetupScreen> {
-  final TextEditingController _nameController = TextEditingController();
+class _UserSetupScreenState extends State<UserSetupScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
+
+  // Animations
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
+          ),
+        );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey[50],
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo et titre
-                _buildHeader(isDark).animate().fadeIn().scale(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
 
-                const SizedBox(height: 48),
+              // Logo et titre avec animations
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: _buildHeader(isDark),
+              ),
 
-                // Message de bienvenue
-                _buildWelcomeMessage(
-                  isDark,
-                ).animate().fadeIn(delay: 300.ms).slideY(),
+              const SizedBox(height: 60),
 
-                const SizedBox(height: 32),
+              // Formulaire avec animations
+              SlideTransition(
+                position: _slideAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        // Champ nom amélioré
+                        _buildNameField(isDark),
 
-                // Champ de nom
-                _buildNameField(
-                  isDark,
-                ).animate().fadeIn(delay: 600.ms).slideY(),
+                        const SizedBox(height: 24),
 
-                const SizedBox(height: 32),
+                        // Champ email (optionnel)
+                        _buildEmailField(isDark),
 
-                // Bouton continuer
-                _buildContinueButton(
-                  isDark,
-                ).animate().fadeIn(delay: 900.ms).slideY(),
+                        const SizedBox(height: 40),
 
-                const SizedBox(height: 16),
+                        // Bouton continuer
+                        _buildContinueButton(isDark),
 
-                // Bouton ignorer
-                _buildSkipButton(isDark).animate().fadeIn(delay: 1200.ms),
-              ],
-            ),
+                        const SizedBox(height: 16),
+
+                        // Bouton ignorer
+                        _buildSkipButton(isDark),
+
+                        const SizedBox(height: 24),
+
+                        // Information sur les données
+                        _buildDataInfoBox(isDark),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -78,15 +133,7 @@ class _UserSetupScreenState extends State<UserSetupScreen> {
             shape: BoxShape.circle,
           ),
           child: Center(
-            child: SvgPicture.asset(
-              'assets/images/africa.svg',
-              width: 80,
-              height: 80,
-              colorFilter: const ColorFilter.mode(
-                Color(0xFF4CAF50),
-                BlendMode.srcIn,
-              ),
-            ),
+            child: Icon(Icons.map, size: 60, color: const Color(0xFF4CAF50)),
           ),
         ),
         const SizedBox(height: 24),
@@ -99,25 +146,18 @@ class _UserSetupScreenState extends State<UserSetupScreen> {
             letterSpacing: 2,
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildWelcomeMessage(bool isDark) {
-    return Column(
-      children: [
-        Text(
-          'Bienvenue !',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : const Color(0xFF2E2E2E),
-          ),
-          textAlign: TextAlign.center,
-        ),
         const SizedBox(height: 12),
         Text(
-          'Pour personnaliser votre expérience, dites-nous comment vous aimeriez être appelé.',
+          'Bienvenue sur HordMaps',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.grey[300] : Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Créons votre profil pour personnaliser votre expérience',
           style: TextStyle(
             fontSize: 16,
             color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -126,6 +166,84 @@ class _UserSetupScreenState extends State<UserSetupScreen> {
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+
+  Widget _buildEmailField(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        decoration: InputDecoration(
+          labelText: 'Email (optionnel)',
+          hintText: 'exemple@email.com',
+          prefixIcon: const Icon(
+            Icons.email_outlined,
+            color: Color(0xFF4CAF50),
+          ),
+          border: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+          contentPadding: const EdgeInsets.all(20),
+        ),
+        validator: (value) {
+          if (value != null && value.isNotEmpty) {
+            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+            if (!emailRegex.hasMatch(value)) {
+              return 'Format d\'email invalide';
+            }
+          }
+          return null;
+        },
+        style: TextStyle(
+          fontSize: 16,
+          color: isDark ? Colors.white : Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataInfoBox(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F8FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF4CAF50).withCustomOpacity(0.3)
+              : const Color(0xFF4CAF50).withCustomOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: const Color(0xFF4CAF50), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Vos données sont stockées localement sur votre appareil et ne sont pas partagées.',
+              style: TextStyle(
+                color: isDark ? Colors.grey[300] : const Color(0xFF2E5930),
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -241,32 +359,56 @@ class _UserSetupScreenState extends State<UserSetupScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final userService = UserService.instance;
       final name = _nameController.text.trim();
-      await UserService.instance.setUserName(name);
+      final email = _emailController.text.trim();
 
-      // Initialiser le profil utilisateur
-      await UserService.instance.setUserProfile({
+      // Sauvegarder le profil utilisateur complet
+      await userService.setUserProfile({
         'name': name,
-        'email': '',
+        'email': email,
         'avatar': '',
-        'setupDate': DateTime.now().toIso8601String(),
         'preferences': {
           'theme': 'system',
           'voiceGuidance': true,
           'notifications': true,
           'units': 'metric',
+          'mapStyle': 'default',
         },
+        'createdAt': DateTime.now().toIso8601String(),
       });
 
+      // Sauvegarder le nom séparément pour compatibilité
+      await userService.setUserName(name);
+
+      // Initialiser les statistiques utilisateur
+      await userService.updateUserStats(
+        totalTrips: 0,
+        totalDistance: 0.0,
+        totalFavorites: 0,
+        lastActivity: DateTime.now(),
+      );
+
       if (mounted) {
+        // Notification de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil créé avec succès !'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Navigation vers l'écran principal
         _navigateToMainApp();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la sauvegarde: $e'),
+            content: Text('Erreur lors de la création du profil: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -285,7 +427,7 @@ class _UserSetupScreenState extends State<UserSetupScreen> {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const ModernHomePage(),
+            const MainNavigationScreen(),
         transitionDuration: const Duration(milliseconds: 800),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
@@ -304,11 +446,5 @@ class _UserSetupScreenState extends State<UserSetupScreen> {
         },
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
   }
 }

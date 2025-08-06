@@ -29,6 +29,8 @@ class AdvancedLocationService extends ChangeNotifier {
 
   // Getters
   LatLng? get currentPosition => _currentPosition;
+  LatLng? get lastKnownPosition => _currentPosition;
+  bool get isInitialized => _currentPosition != null && _hasPermission;
   double get currentSpeed => _currentSpeed;
   double get currentHeading => _currentHeading;
   double get accuracy => _accuracy;
@@ -115,6 +117,13 @@ class AdvancedLocationService extends ChangeNotifier {
       throw Exception('Permissions ou service de localisation non disponibles');
     }
     _startLocationTracking();
+  }
+
+  /// Charge toutes les données basées sur la position actuelle
+  Future<void> loadLocationData() async {
+    if (_currentPosition != null) {
+      await Future.wait([_loadNearbyPlaces(), _loadWeatherData()]);
+    }
   }
 
   /// Actualise les lieux proches
