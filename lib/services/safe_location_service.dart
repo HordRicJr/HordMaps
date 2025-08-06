@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'emergency_location_disable_service.dart';
+import 'event_throttle_service.dart';
 
 /// Service de géolocalisation robuste avec gestion d'erreurs complète
 class SafeLocationService extends ChangeNotifier {
@@ -40,6 +42,25 @@ class SafeLocationService extends ChangeNotifier {
     debugPrint('🔍 Initialisation du service de géolocalisation...');
 
     try {
+      // NOUVEAU: Vérifier si la géolocalisation est désactivée en mode d'urgence
+      final isDisabled =
+          await EmergencyLocationDisableService.isGeolocationDisabled();
+      if (isDisabled) {
+        debugPrint('🚨 Géolocalisation désactivée en mode d\'urgence');
+        _lastError = 'Mode d\'urgence activé - géolocalisation désactivée';
+
+        // Utiliser la position par défaut
+        final defaultPos = EmergencyLocationDisableService.getDefaultPosition();
+        _currentPosition = LatLng(
+          defaultPos['latitude']!,
+          defaultPos['longitude']!,
+        );
+        _lastKnownPosition = _currentPosition;
+        _isInitialized = true;
+        debugPrint('✅ Mode d\'urgence : position par défaut utilisée');
+        return true;
+      }
+
       // 1. Vérifier les permissions étape par étape
       _hasPermission = await _checkAndRequestPermissions();
       if (!_hasPermission) {
@@ -71,7 +92,19 @@ class SafeLocationService extends ChangeNotifier {
     } catch (e) {
       _lastError = 'Erreur d\'initialisation: $e';
       debugPrint('❌ $_lastError');
-      return false;
+
+      // NOUVEAU: En cas d'erreur, basculer automatiquement en mode d'urgence
+      debugPrint('🚨 Basculement automatique en mode d\'urgence');
+      await EmergencyLocationDisableService.disableGeolocation();
+
+      final defaultPos = EmergencyLocationDisableService.getDefaultPosition();
+      _currentPosition = LatLng(
+        defaultPos['latitude']!,
+        defaultPos['longitude']!,
+      );
+      _lastKnownPosition = _currentPosition;
+      _isInitialized = true;
+      return true;
     }
   }
 
@@ -156,8 +189,16 @@ class SafeLocationService extends ChangeNotifier {
     _currentSpeed = position.speed * 3.6; // Conversion m/s vers km/h
     _accuracy = position.accuracy;
 
-    _positionController.add(newPosition);
-    notifyListeners();
+    // NOUVEAU: Throttle les mises à jour pour éviter les surcharges
+    EventThrottleService().throttle('stream_update', () {
+      if (!_positionController.isClosed) {
+        _positionController.add(newPosition);
+      }
+    });
+
+    EventThrottleService().throttle('ui_update', () {
+      notifyListeners();
+    });
 
     debugPrint(
       '📍 Position mise à jour: ${position.latitude}, ${position.longitude}',
@@ -184,16 +225,23 @@ class SafeLocationService extends ChangeNotifier {
             locationSettings: locationSettings,
           ).listen(
             (Position position) {
-              _updatePosition(position);
+              // NOUVEAU: Throttle les mises à jour de position pour éviter les surcharges
+              EventThrottleService().throttle('location_update', () {
+                _updatePosition(position);
+              });
             },
             onError: (error) {
               debugPrint('❌ Erreur suivi position: $error');
               _lastError = 'Erreur suivi: $error';
-              notifyListeners();
+
+              // Throttle les notifications d'erreur aussi
+              EventThrottleService().throttle('location_error', () {
+                notifyListeners();
+              });
             },
           );
 
-      debugPrint('✅ Suivi de position démarré');
+      debugPrint('✅ Suivi de position démarré avec throttling');
     } catch (e) {
       debugPrint('❌ Erreur démarrage suivi: $e');
       _lastError = 'Erreur démarrage suivi: $e';

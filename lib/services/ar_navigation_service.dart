@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'central_event_manager.dart';
 
 /// Types d'objets AR
 enum ARObjectType {
@@ -77,6 +78,9 @@ class ARNavigationService extends ChangeNotifier {
   StreamSubscription<LatLng>? _positionSubscription;
   Timer? _arUpdateTimer;
 
+  // Gestionnaire central pour éviter les conflits
+  final CentralEventManager _eventManager = CentralEventManager();
+
   // Getters
   bool get isAREnabled => _isAREnabled;
   bool get isARSupported => _isARSupported;
@@ -113,8 +117,9 @@ class ARNavigationService extends ChangeNotifier {
     try {
       _isAREnabled = true;
 
-      // Démarrer le timer de mise à jour
-      _arUpdateTimer = Timer.periodic(
+      // Démarrer le timer de mise à jour via le gestionnaire central
+      _arUpdateTimer = _eventManager.registerPeriodicTimer(
+        'ar_navigation_update',
         const Duration(milliseconds: 100),
         (_) => _updateARObjects(),
       );
@@ -129,7 +134,8 @@ class ARNavigationService extends ChangeNotifier {
   /// Arrête l'AR
   Future<void> stopAR() async {
     _isAREnabled = false;
-    _arUpdateTimer?.cancel();
+    _eventManager.cancelTimer('ar_navigation_update');
+    _arUpdateTimer = null;
     notifyListeners();
   }
 

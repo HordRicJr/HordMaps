@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../services/places_service.dart';
 import '../services/location_service.dart';
 import '../services/cache_service.dart';
+import '../services/event_throttle_service.dart';
 
 /// Contrôleur MVC pour la recherche de lieux et POI
 class SearchController extends ChangeNotifier {
@@ -33,7 +34,9 @@ class SearchController extends ChangeNotifier {
   Future<void> searchPlaces(String query) async {
     if (query.trim().isEmpty) {
       _searchResults = [];
-      notifyListeners();
+      EventThrottleService().throttle('ui_update', () {
+        notifyListeners();
+      });
       return;
     }
 
@@ -48,7 +51,9 @@ class SearchController extends ChangeNotifier {
 
       if (cachedResults != null && cachedResults is List) {
         _searchResults = cachedResults;
-        notifyListeners();
+        EventThrottleService().throttle('search_result', () {
+          notifyListeners();
+        });
         return;
       }
 

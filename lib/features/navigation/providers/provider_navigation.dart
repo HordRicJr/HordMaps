@@ -8,6 +8,8 @@ import '../../../services/navigation_notification_service.dart';
 import '../../../services/real_time_navigation_service.dart';
 import '../../../services/background_navigation_service.dart';
 import '../../../services/osm_routing_service.dart';
+import '../../../services/event_throttle_service.dart';
+import '../../../services/central_event_manager.dart';
 import '../../../models/navigation_models.dart';
 
 /// Provider de navigation principal consolidé avec toutes les fonctionnalités avancées
@@ -50,8 +52,9 @@ class NavigationProvider extends ChangeNotifier {
 
   // Streaming et abonnements
   StreamSubscription<LatLng>? _locationSubscription;
-  Timer? _navigationTimer;
-  Timer? _trafficUpdateTimer;
+
+  // Gestionnaire central pour éviter les conflits d'événements
+  final CentralEventManager _eventManager = CentralEventManager();
 
   NavigationProvider() {
     // Initialisation asynchrone différée
@@ -146,12 +149,16 @@ class NavigationProvider extends ChangeNotifier {
   void setRouteProfile(String profile) {
     if (_routeProfile != profile) {
       _routeProfile = profile;
-      notifyListeners();
 
-      // Recalculer la route si elle existe
-      if (_startPoint != null && _endPoint != null) {
-        calculateRoute(_startPoint!, _endPoint!);
-      }
+      // NOUVEAU: Throttle pour éviter les recalculs excessifs
+      EventThrottleService().throttle('route_profile_change', () {
+        notifyListeners();
+
+        // Recalculer la route si elle existe
+        if (_startPoint != null && _endPoint != null) {
+          calculateRoute(_startPoint!, _endPoint!);
+        }
+      });
     }
   }
 
@@ -177,7 +184,10 @@ class NavigationProvider extends ChangeNotifier {
       _checkForRerouting();
     }
 
-    notifyListeners();
+    // NOUVEAU: Throttle les mises à jour de position pour éviter les surcharges
+    EventThrottleService().throttle('navigation_update', () {
+      notifyListeners();
+    });
   }
 
   /// Calcule un itinéraire entre deux points avec options avancées
@@ -344,20 +354,28 @@ class NavigationProvider extends ChangeNotifier {
 
   /// Démarre les timers de navigation
   void _startNavigationTimers() {
-    // Timer de navigation principal (mise à jour chaque seconde)
-    _navigationTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (_isNavigating) {
-        _updateNavigationProgress();
-      }
-    });
-
-    // Timer de mise à jour du trafic (toutes les 2 minutes)
-    if (_enableTrafficUpdates) {
-      _trafficUpdateTimer = Timer.periodic(Duration(minutes: 2), (timer) {
+    // Timer de navigation principal (mise à jour chaque seconde) via gestionnaire central
+    _eventManager.registerPeriodicTimer(
+      'navigation_main_update',
+      Duration(seconds: 1),
+      (timer) {
         if (_isNavigating) {
-          _updateTrafficData();
+          _updateNavigationProgress();
         }
-      });
+      },
+    );
+
+    // Timer de mise à jour du trafic (toutes les 2 minutes) via gestionnaire central
+    if (_enableTrafficUpdates) {
+      _eventManager.registerPeriodicTimer(
+        'navigation_traffic_update',
+        Duration(minutes: 2),
+        (timer) {
+          if (_isNavigating) {
+            _updateTrafficData();
+          }
+        },
+      );
     }
   }
 
@@ -557,10 +575,11 @@ class NavigationProvider extends ChangeNotifier {
       _isNavigating = false;
       _currentStepIndex = 0;
 
-      // Arrêter tous les timers et abonnements
-      _navigationTimer?.cancel();
-      _trafficUpdateTimer?.cancel();
+      // Arrêter tous les timers et abonnements via gestionnaire central
+      _eventManager.cancelTimer('navigation_main_update');
+      _eventManager.cancelTimer('navigation_traffic_update');
       _locationSubscription?.cancel();
+      _locationSubscription = null;
 
       // Arrêter tous les services
       await _realTimeService?.stopNavigation();
@@ -666,10 +685,23 @@ class NavigationProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _navigationTimer?.cancel();
-    _trafficUpdateTimer?.cancel();
+    // Arrêt coordonné des services
+    _stopAllServices();
+    // Nettoyer via le gestionnaire central
+    _eventManager.cancelTimersByPrefix('navigation_');
     _locationSubscription?.cancel();
     _dio.close();
     super.dispose();
+  }
+
+  /// Arrête tous les services de façon sécurisée
+  void _stopAllServices() {
+    try {
+      _realTimeService?.stopNavigation();
+      _backgroundService?.stopBackgroundNavigation();
+      _notificationService?.stopNavigation();
+    } catch (e) {
+      debugPrint('Erreur arrêt services navigation: $e');
+    }
   }
 }

@@ -9,7 +9,9 @@ import '../../shared/services/map_customization_service.dart';
 import '../../features/notifications/notification_provider.dart';
 import '../../services/user_service.dart';
 import '../../../shared/extensions/color_extensions.dart';
-import '../../screens/location_diagnostic_screen.dart';
+import '../../screens/crash_analysis_screen.dart';
+import '../../screens/emergency_location_screen.dart';
+import '../../screens/map_controls_test_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -117,14 +119,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             _buildNavigationTile(
-              'Diagnostic Géolocalisation',
-              'Tester et déboguer les problèmes GPS',
-              Icons.bug_report,
+              '📊 ANALYSE DES CRASHES',
+              'Analyser les patterns de crash et solutions',
+              Icons.analytics,
               () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const LocationDiagnosticScreen(),
+                    builder: (context) => const CrashAnalysisScreen(),
+                  ),
+                );
+              },
+            ),
+            _buildNavigationTile(
+              '🛑 MODE D\'URGENCE',
+              'Désactiver géolocalisation et position manuelle',
+              Icons.emergency_share,
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EmergencyLocationScreen(),
+                  ),
+                );
+              },
+            ),
+            _buildNavigationTile(
+              '🗺️ TEST CONTRÔLES CARTE',
+              'Tester tous les boutons et styles de carte',
+              Icons.control_camera,
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MapControlsTestScreen(),
                   ),
                 );
               },
