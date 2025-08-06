@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Inclure toutes les données par défaut -->
+    <include domain="root" />
+    <include domain="file" />
+    <include domain="database" />
+    <include domain="sharedpref" />
+    <include domain="external" />
+    
+    <!-- Exclure les données sensibles et temporaires -->
+    <exclude domain="sharedpref" path="flutter.secure_storage.xml" />
+    <exclude domain="database" path="cache.db" />
+    <exclude domain="database" path="temp.db" />
+    <exclude domain="file" path="cache/" />
+    <exclude domain="file" path="temp/" />
+    
+    <!-- Inclure explicitement les préférences utilisateur importantes -->
+    <include domain="sharedpref" path="FlutterSharedPreferences.xml" />
+    <include domain="database" path="app_database.db" />
+</full-backup-content>

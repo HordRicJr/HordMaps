@@ -8,11 +8,17 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import android.os.Build
+import android.app.AppOpsManager
+import android.content.pm.PackageManager
 import androidx.annotation.NonNull
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.example.hordmaps/navigation"
     private lateinit var overlayManager: OverlayManager
+    private val OVERLAY_PERMISSION_REQUEST_CODE = 1000
+    private val PERMISSIONS_REQUEST_CODE = 1001
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -41,7 +47,14 @@ class MainActivity: FlutterActivity() {
                     result.success(true)
                 }
                 "checkOverlayPermission" -> {
-                    result.success(overlayManager.hasOverlayPermission())
+                    result.success(hasOverlayPermission())
+                }
+                "requestAllPermissions" -> {
+                    requestAllNecessaryPermissions()
+                    result.success(true)
+                }
+                "checkAllPermissions" -> {
+                    result.success(hasAllNecessaryPermissions())
                 }
                 "startBackgroundNavigation" -> {
                     val destination = call.argument<String>("destination") ?: ""
@@ -113,27 +126,108 @@ class MainActivity: FlutterActivity() {
         }
     }
 
+    private fun hasOverlayPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
+
+    private fun hasAllNecessaryPermissions(): Boolean {
+        val permissions = listOf(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+            android.Manifest.permission.POST_NOTIFICATIONS
+        )
+        
+        return permissions.all { permission ->
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+        } && hasOverlayPermission()
+    }
+
+    private fun requestAllNecessaryPermissions() {
+        val permissions = mutableListOf<String>()
+        
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+        
+        if (permissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permissions.toTypedArray(), PERMISSIONS_REQUEST_CODE)
+        }
+        
+        // Demander la permission d'overlay séparément
+        if (!hasOverlayPermission()) {
+            requestOverlayPermission()
+        }
+    }
+
     private fun requestOverlayPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-                startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST_CODE)
+                // Pour Android 15, utiliser une approche plus directe
+                val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    // Android 15+ - nouvelle approche
+                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                        data = Uri.parse("package:$packageName")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                } else {
+                    // Android 6-14
+                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                }
+                
+                try {
+                    startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST_CODE)
+                } catch (e: Exception) {
+                    // Fallback: ouvrir les paramètres généraux de l'app
+                    val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:$packageName")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(fallbackIntent)
+                }
             }
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == OVERLAY_PERMISSION_REQUEST_CODE) {
-            // Inform Flutter about permission result
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val hasPermission = Settings.canDrawOverlays(this)
-                // You could send this back to Flutter via a separate method channel if needed
+        when (requestCode) {
+            OVERLAY_PERMISSION_REQUEST_CODE -> {
+                // Informer Flutter du résultat
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val hasPermission = Settings.canDrawOverlays(this)
+                    // Vous pourriez envoyer cela via un MethodChannel si nécessaire
+                }
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            PERMISSIONS_REQUEST_CODE -> {
+                // Traiter les résultats des permissions
+                val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+                // Vous pourriez informer Flutter du résultat
             }
         }
     }
 
     companion object {
         private const val OVERLAY_PERMISSION_REQUEST_CODE = 1000
+        private const val PERMISSIONS_REQUEST_CODE = 1001
     }
 }
