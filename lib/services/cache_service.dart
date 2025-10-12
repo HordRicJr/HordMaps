@@ -402,7 +402,7 @@ class CacheService extends ChangeNotifier {
     }
   }
 
-  /// Méthodes génériques de cache pour l'OSM Routing Service
+  /// Méthodes génériques de cache pour les services de routage
   Future<Map<String, dynamic>?> getFromCache(String key) async {
     try {
       final cachedDataString = prefs.getString('cache_$key');

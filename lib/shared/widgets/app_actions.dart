@@ -10,6 +10,7 @@ import '../../services/measurement_service.dart';
 import '../../services/compass_service.dart';
 import '../services/share_service.dart';
 import '../services/storage_service.dart';
+import '../../core/config/environment_config.dart';
 
 class AppActions {
   /// Ouvrir la recherche avancée
@@ -1011,7 +1012,7 @@ class MapStylesBottomSheet extends StatelessWidget {
                   context,
                   'Standard',
                   Icons.map,
-                  'Carte standard OpenStreetMap',
+                  'Carte standard Azure Maps',
                   'standard',
                 ),
                 _buildStyleCard(
@@ -1115,7 +1116,7 @@ class MapStylesBottomSheet extends StatelessWidget {
       case 'cycle':
         return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=YOUR_API_KEY';
       default:
-        return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+        return AzureTileUrls.standard;
     }
   }
 }

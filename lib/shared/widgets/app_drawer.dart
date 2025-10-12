@@ -210,7 +210,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Navigation basée sur OpenStreetMap',
+                  'Navigation basée sur Azure Maps',
                   style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                 ),
               ],

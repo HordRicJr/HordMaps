@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../services/event_throttle_service.dart';
+import '../core/config/environment_config.dart';
 
 /// Types de couches de carte disponibles
 enum MapLayerType {
@@ -53,83 +54,101 @@ class CompleteMapLayerService extends ChangeNotifier {
   double get tilt => _tilt;
   double get bearing => _bearing;
 
-  /// Liste de toutes les couches disponibles
-  static const List<MapLayerConfig> availableLayers = [
+  /// Liste de toutes les couches disponibles - Azure Maps
+  static List<MapLayerConfig> get availableLayers => [
     MapLayerConfig(
       type: MapLayerType.standard,
       name: 'Standard',
-      description: 'Vue carte classique',
+      description: 'Vue carte classique Azure Maps',
       icon: Icons.map,
       color: Colors.blue,
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      url: _getAzureMapsUrl('basic'),
     ),
     MapLayerConfig(
       type: MapLayerType.satellite,
       name: 'Satellite',
-      description: 'Images satellite',
+      description: 'Images satellite Azure Maps',
       icon: Icons.satellite_alt,
       color: Colors.green,
-      url:
-          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      url: _getAzureMapsUrl('imagery'),
     ),
     MapLayerConfig(
       type: MapLayerType.terrain,
       name: 'Relief',
-      description: 'Carte topographique',
+      description: 'Carte topographique Azure Maps',
       icon: Icons.terrain,
       color: Colors.brown,
-      url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+      url: _getAzureMapsUrl('terrain'),
     ),
     MapLayerConfig(
       type: MapLayerType.hybrid,
       name: 'Hybride',
-      description: 'Satellite + routes',
+      description: 'Satellite + routes Azure Maps',
       icon: Icons.layers,
       color: Colors.purple,
-      url:
-          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      url: _getAzureMapsUrl('hybrid'),
     ),
     MapLayerConfig(
       type: MapLayerType.relief,
       name: 'Relief 3D',
-      description: 'Relief en 3D',
+      description: 'Relief en 3D Azure Maps',
       icon: Icons.view_in_ar,
       color: Colors.orange,
-      url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+      url: _getAzureMapsUrl('terrain'),
     ),
     MapLayerConfig(
       type: MapLayerType.traffic,
       name: 'Trafic',
-      description: 'Conditions de trafic',
+      description: 'Conditions de trafic Azure Maps',
       icon: Icons.traffic,
       color: Colors.red,
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      url: _getAzureMapsUrl('basic_night'),
     ),
     MapLayerConfig(
       type: MapLayerType.transit,
       name: 'Transport',
-      description: 'Transports en commun',
+      description: 'Transports en commun Azure Maps',
       icon: Icons.directions_bus,
       color: Colors.indigo,
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      url: _getAzureMapsUrl('basic'),
     ),
     MapLayerConfig(
       type: MapLayerType.bike,
       name: 'Vélo',
-      description: 'Pistes cyclables',
+      description: 'Pistes cyclables Azure Maps',
       icon: Icons.directions_bike,
       color: Colors.teal,
-      url: 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png',
+      url: _getAzureMapsUrl('basic'),
     ),
     MapLayerConfig(
       type: MapLayerType.walking,
       name: 'Piéton',
-      description: 'Chemins piétons',
+      description: 'Chemins piétons Azure Maps',
       icon: Icons.directions_walk,
       color: Colors.amber,
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      url: _getAzureMapsUrl('basic'),
     ),
   ];
+
+  /// Génère l'URL des tuiles Azure Maps pour un style donné
+  static String _getAzureMapsUrl(String style) {
+    try {
+      // Vérifier si la configuration Azure Maps est valide
+      if (!AzureMapsConfig.isValid) {
+        // Fallback vers Azure Maps standard si pas de configuration
+        return AzureTileUrls.standard;
+      }
+      
+      final baseUrl = AzureMapsConfig.renderUrl;
+      final apiVersion = AzureMapsConfig.apiVersion;
+      final apiKey = AzureMapsConfig.apiKey;
+      
+      return '$baseUrl/tile/$style/zoom-level/{z}/tile-row/{y}/tile-column/{x}?api-version=$apiVersion&subscription-key=$apiKey';
+    } catch (e) {
+      // Fallback vers Azure Maps standard en cas d'erreur
+      return AzureTileUrls.standard;
+    }
+  }
 
   /// Change la couche de carte
   void setLayer(MapLayerType layer) {

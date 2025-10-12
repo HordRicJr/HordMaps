@@ -575,7 +575,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text('Build: 100'),
             Text('Flutter: 3.8.1'),
             SizedBox(height: 16),
-            Text('Application de navigation basée sur OpenStreetMap'),
+            Text('Application de navigation basée sur Azure Maps'),
           ],
         ),
         actions: [

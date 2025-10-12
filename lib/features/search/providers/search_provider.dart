@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:dio/dio.dart';
+import '../../../core/config/environment_config.dart';
 
 class SearchResult {
   final String name;
@@ -17,13 +18,19 @@ class SearchResult {
     this.address,
   });
 
-  factory SearchResult.fromNominatim(Map<String, dynamic> json) {
+  factory SearchResult.fromAzureMaps(Map<String, dynamic> json) {
+    final address = json['address'] as Map<String, dynamic>? ?? {};
+    final position = json['position'] as Map<String, dynamic>? ?? {};
+    
     return SearchResult(
-      name: json['name'] ?? json['display_name'] ?? '',
-      displayName: json['display_name'] ?? '',
-      position: LatLng(double.parse(json['lat']), double.parse(json['lon'])),
-      type: json['type'] ?? json['class'] ?? '',
-      address: json['display_name'],
+      name: address['freeformAddress'] ?? json['poi']?['name'] ?? '',
+      displayName: address['freeformAddress'] ?? json['poi']?['name'] ?? '',
+      position: LatLng(
+        position['lat']?.toDouble() ?? 0.0,
+        position['lon']?.toDouble() ?? 0.0,
+      ),
+      type: json['type'] ?? 'POI',
+      address: address['freeformAddress'],
     );
   }
 }
@@ -44,7 +51,7 @@ class SearchProvider extends ChangeNotifier {
   SearchResult? get selectedResult => _selectedResult;
   List<String> get recentSearches => _recentSearches;
 
-  /// Recherche des lieux via Nominatim (OpenStreetMap)
+  /// Recherche des lieux via Azure Maps Search API
   Future<void> searchPlaces(String query) async {
     if (query.isEmpty) {
       _clearSearch();
@@ -57,21 +64,21 @@ class SearchProvider extends ChangeNotifier {
 
     try {
       final response = await _dio.get(
-        'https://nominatim.openstreetmap.org/search',
+        '${AzureMapsConfig.searchUrl}/address/json',
         queryParameters: {
-          'q': query,
-          'format': 'json',
+          'api-version': AzureMapsConfig.apiVersion,
+          'subscription-key': AzureMapsConfig.apiKey,
+          'query': query,
           'limit': 10,
-          'addressdetails': 1,
-          'extratags': 1,
-          'namedetails': 1,
+          'language': 'fr-FR',
         },
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        _searchResults = data
-            .map((json) => SearchResult.fromNominatim(json))
+        final responseData = response.data as Map<String, dynamic>;
+        final results = responseData['results'] as List<dynamic>? ?? [];
+        _searchResults = results
+            .map((json) => SearchResult.fromAzureMaps(json))
             .toList();
       } else {
         _searchResults = [];
@@ -92,22 +99,24 @@ class SearchProvider extends ChangeNotifier {
 
     try {
       final response = await _dio.get(
-        'https://nominatim.openstreetmap.org/search',
+        '${AzureMapsConfig.searchUrl}/nearby/json',
         queryParameters: {
+          'api-version': AzureMapsConfig.apiVersion,
+          'subscription-key': AzureMapsConfig.apiKey,
           'lat': position.latitude,
           'lon': position.longitude,
-          'format': 'json',
+          'radius': 1000,
           'limit': 20,
-          'radius': 1000, // 1km
-          'amenity': category,
-          'addressdetails': 1,
+          'categorySet': _mapCategoryToAzure(category),
+          'language': 'fr-FR',
         },
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        _searchResults = data
-            .map((json) => SearchResult.fromNominatim(json))
+        final responseData = response.data as Map<String, dynamic>;
+        final results = responseData['results'] as List<dynamic>? ?? [];
+        _searchResults = results
+            .map((json) => SearchResult.fromAzureMaps(json))
             .toList();
       } else {
         _searchResults = [];
@@ -125,18 +134,22 @@ class SearchProvider extends ChangeNotifier {
   Future<String?> reverseGeocode(LatLng position) async {
     try {
       final response = await _dio.get(
-        'https://nominatim.openstreetmap.org/reverse',
+        '${AzureMapsConfig.searchUrl}/address/reverse/json',
         queryParameters: {
-          'lat': position.latitude,
-          'lon': position.longitude,
-          'format': 'json',
-          'addressdetails': 1,
+          'api-version': AzureMapsConfig.apiVersion,
+          'subscription-key': AzureMapsConfig.apiKey,
+          'query': '${position.latitude},${position.longitude}',
+          'language': 'fr-FR',
         },
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
-        return data['display_name'];
+        final responseData = response.data as Map<String, dynamic>;
+        final addresses = responseData['addresses'] as List<dynamic>? ?? [];
+        if (addresses.isNotEmpty) {
+          final address = addresses.first['address'] as Map<String, dynamic>? ?? {};
+          return address['freeformAddress'] ?? '';
+        }
       }
     } catch (e) {
       debugPrint('Erreur de géocodage inverse: $e');
@@ -188,6 +201,34 @@ class SearchProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  /// Mappe les catégories de recherche vers les categorySet Azure Maps
+  String _mapCategoryToAzure(String category) {
+    switch (category.toLowerCase()) {
+      case 'restaurant':
+        return '7315';
+      case 'hotel':
+        return '7314';
+      case 'hospital':
+        return '7321';
+      case 'school':
+        return '7372';
+      case 'bank':
+        return '7328';
+      case 'gas_station':
+        return '7311';
+      case 'pharmacy':
+        return '7326';
+      case 'supermarket':
+        return '7332';
+      case 'cafe':
+        return '7315025';
+      case 'atm':
+        return '7397';
+      default:
+        return '7315'; // Restaurant par défaut
+    }
   }
 
   @override

@@ -1,0 +1,120 @@
+MIT License
+
+Copyright (c) 2025 HordMaps Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Third-Party Licenses and Acknowledgments
+
+### Azure Maps
+This application uses Microsoft Azure Maps services, which are subject to Microsoft's terms of service. 
+- Azure Maps: https://azure.microsoft.com/en-us/products/azure-maps/
+- Azure Maps Terms: https://azure.microsoft.com/en-us/support/legal/
+
+### Flutter Framework
+This application is built using Flutter, which is licensed under the BSD 3-Clause License.
+- Flutter: https://flutter.dev/
+- Flutter License: https://github.com/flutter/flutter/blob/master/LICENSE
+
+### Material Design
+This application implements Material Design components and guidelines by Google.
+- Material Design: https://material.io/
+- Material Design License: Apache 2.0
+
+### OpenStreetMap (Limited Use)
+Some features may use OpenStreetMap data, which is licensed under the Open Database License (ODbL).
+- OpenStreetMap: https://www.openstreetmap.org/
+- ODbL License: https://opendatacommons.org/licenses/odbl/
+
+### Dependencies and Packages
+This project uses various open-source Flutter packages, each with their respective licenses:
+
+- **provider**: MIT License
+- **geolocator**: MIT License  
+- **permission_handler**: MIT License
+- **flutter_local_notifications**: BSD 3-Clause License
+- **share_plus**: BSD 3-Clause License
+- **qr_flutter**: BSD 3-Clause License
+- **objectbox**: Apache 2.0 License
+
+For a complete list of dependencies and their licenses, see `pubspec.yaml` and run:
+```bash
+flutter pub deps --style=compact
+```
+
+### Icons and Assets
+- **Material Design Icons**: Apache 2.0 License by Google
+- **App Icons**: Custom icons created for HordMaps (MIT License)
+
+### Fonts
+- **Google Fonts**: Licensed under SIL Open Font License 1.1
+- **Roboto**: Apache 2.0 License by Google
+
+---
+
+## Attribution Requirements
+
+When redistributing or modifying this software, please include:
+
+1. **Copyright Notice**: The original copyright notice and license text
+2. **Attribution**: Credit to "HordMaps Contributors" 
+3. **Third-Party Notices**: Include relevant third-party license notices
+4. **Changes Notice**: Document any modifications made to the original code
+
+### Recommended Attribution Format
+```
+HordMaps - Modern Navigation Application
+Copyright (c) 2025 HordMaps Contributors
+Licensed under MIT License
+Built with Flutter and powered by Azure Maps
+```
+
+---
+
+## Commercial Use
+
+This software is free for commercial use under the MIT License. However, please note:
+
+- **Azure Maps**: Requires separate licensing for commercial use
+- **Google Play Store**: May require developer account and fees
+- **App Store**: May require developer account and fees
+- **Trademark**: "HordMaps" name and logo may have separate usage restrictions
+
+---
+
+## Contributing License Agreement
+
+By contributing to this project, you agree that your contributions will be licensed under the same MIT License that covers the project. You also represent that you have the right to make such contributions.
+
+For more information about contributing, see our [Contributing Guide](CONTRIBUTING.md).
+
+---
+
+## Questions About Licensing
+
+For questions about licensing, commercial use, or third-party integrations:
+- 📧 Email: legal@hordmaps.com
+- 💬 GitHub Discussions: https://github.com/yourusername/hordmaps/discussions
+- 📄 GitHub Issues: For license-related bugs or issues
+
+---
+
+*This license information is provided for transparency and compliance. We strive to respect all open-source licenses and encourage proper attribution.*

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'storage_service.dart';
+import '../../core/config/environment_config.dart';
 
 /// Catégories de POI
 enum POICategory {
@@ -460,7 +461,7 @@ class POIService extends ChangeNotifier {
     );
   }
 
-  /// Recherche en ligne via API Overpass
+  /// Recherche en ligne via API Azure Maps
   Future<List<POI>> _searchOnlinePOIs({
     required LatLng position,
     String? query,
@@ -469,22 +470,25 @@ class POIService extends ChangeNotifier {
     required int maxResults,
   }) async {
     try {
-      // Utiliser l'API Overpass pour chercher des POIs réels
-      final overpassQuery = _buildOverpassQuery(
-        position,
-        categories,
-        maxDistance,
-      );
-
-      final response = await http.post(
-        Uri.parse('https://overpass-api.de/api/interpreter'),
-        body: overpassQuery,
-        headers: {'Content-Type': 'text/plain'},
+      // Utiliser l'API Azure Maps Search POI pour chercher des POIs réels
+      final response = await http.get(
+        Uri.parse('${AzureMapsConfig.searchUrl}/poi/json').replace(
+          queryParameters: {
+            'api-version': AzureMapsConfig.apiVersion,
+            'subscription-key': AzureMapsConfig.apiKey,
+            'lat': position.latitude.toString(),
+            'lon': position.longitude.toString(),
+            'radius': (maxDistance * 1000).round().toString(),
+            'limit': maxResults.toString(),
+            'language': 'fr-FR',
+            if (query != null) 'query': query,
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return _parseOverpassResponse(data, categories, maxResults);
+        return _parseAzureMapsResponse(data, categories, maxResults);
       }
     } catch (e) {
       debugPrint('Erreur recherche POI en ligne: $e');
@@ -494,94 +498,42 @@ class POIService extends ChangeNotifier {
     return _generateLocalPOIs(position, categories, maxResults);
   }
 
-  /// Construit une requête Overpass pour rechercher des POIs
-  String _buildOverpassQuery(
-    LatLng position,
-    Set<POICategory> categories,
-    double maxDistance,
-  ) {
-    final lat = position.latitude;
-    final lng = position.longitude;
-    final radius = (maxDistance * 1000).round(); // Convertir en mètres
 
-    final tags = categories
-        .map((cat) {
-          switch (cat) {
-            case POICategory.restaurant:
-              return 'amenity=restaurant';
-            case POICategory.hotel:
-              return 'tourism=hotel';
-            case POICategory.attraction:
-              return 'tourism=attraction';
-            case POICategory.shop:
-              return 'shop';
-            case POICategory.transport:
-              return 'public_transport';
-            case POICategory.health:
-              return 'amenity=hospital';
-            case POICategory.education:
-              return 'amenity=school';
-            case POICategory.service:
-              return 'amenity=bank';
-            case POICategory.entertainment:
-              return 'amenity=cinema';
-            case POICategory.sport:
-              return 'leisure=sports_centre';
-            case POICategory.culture:
-              return 'tourism=museum';
-            case POICategory.nature:
-              return 'natural=park';
-            case POICategory.other:
-              return 'amenity';
-          }
-        })
-        .join('|');
 
-    return '''
-    [out:json][timeout:25];
-    (
-      node["$tags"](around:$radius,$lat,$lng);
-      way["$tags"](around:$radius,$lat,$lng);
-    );
-    out center meta;
-    ''';
-  }
-
-  /// Parse la réponse Overpass pour extraire les POIs
-  List<POI> _parseOverpassResponse(
+  /// Parse la réponse Azure Maps pour extraire les POIs
+  List<POI> _parseAzureMapsResponse(
     Map<String, dynamic> data,
     Set<POICategory> categories,
     int maxResults,
   ) {
     final pois = <POI>[];
-    final elements = data['elements'] as List? ?? [];
+    final results = data['results'] as List? ?? [];
 
-    for (final element in elements.take(maxResults)) {
+    for (final result in results.take(maxResults)) {
       try {
-        final tags = element['tags'] as Map<String, dynamic>? ?? {};
-        final lat =
-            element['lat'] as double? ?? element['center']?['lat'] as double?;
-        final lng =
-            element['lon'] as double? ?? element['center']?['lon'] as double?;
+        final position = result['position'] as Map<String, dynamic>? ?? {};
+        final address = result['address'] as Map<String, dynamic>? ?? {};
+        final poi = result['poi'] as Map<String, dynamic>? ?? {};
+        
+        final lat = position['lat']?.toDouble();
+        final lng = position['lon']?.toDouble();
 
         if (lat != null && lng != null) {
-          final poi = POI(
-            id: element['id'].toString(),
-            name: tags['name'] ?? 'POI sans nom',
-            description: tags['description'] ?? '',
-            category: _detectCategory(tags),
+          final poiObject = POI(
+            id: result['id']?.toString() ?? '',
+            name: poi['name'] ?? address['freeformAddress']?.split(',')[0] ?? 'POI sans nom',
+            description: poi['description'] ?? '',
+            category: _detectAzureMapsCategory(result),
             location: LatLng(lat, lng),
             rating: null,
             reviewCount: 0,
-            address: _buildAddress(tags),
-            phone: tags['phone'],
-            website: tags['website'],
-            openingHours: tags['opening_hours'] != null
-                ? {'default': tags['opening_hours']}
-                : {},
-            tags: tags.keys.toList(),
+            address: address['freeformAddress'] ?? '',
+            phone: poi['phone'],
+            website: poi['url'],
+            openingHours: {}, // Azure Maps ne fournit pas les heures d'ouverture dans cette API
+            tags: (poi['categories'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
           );
-          pois.add(poi);
+          pois.add(poiObject);
         }
       } catch (e) {
         debugPrint('Erreur parsing POI: $e');
@@ -591,26 +543,49 @@ class POIService extends ChangeNotifier {
     return pois;
   }
 
-  /// Détecte la catégorie d'un POI à partir de ses tags
-  POICategory _detectCategory(Map<String, dynamic> tags) {
-    if (tags['amenity'] == 'restaurant') return POICategory.restaurant;
-    if (tags['tourism'] == 'hotel') return POICategory.hotel;
-    if (tags['tourism'] == 'attraction') return POICategory.attraction;
-    if (tags.containsKey('shop')) return POICategory.shop;
-    if (tags.containsKey('public_transport')) return POICategory.transport;
-    if (tags['amenity'] == 'hospital') return POICategory.health;
-    if (tags['amenity'] == 'school') return POICategory.education;
-    return POICategory.attraction; // Par défaut
+  /// Détecte la catégorie d'un POI basé sur les données Azure Maps
+  POICategory _detectAzureMapsCategory(Map<String, dynamic> result) {
+    final poi = result['poi'] as Map<String, dynamic>? ?? {};
+    final categories = poi['categories'] as List<dynamic>? ?? [];
+    
+    for (String category in categories) {
+      String cat = category.toLowerCase();
+      if (cat.contains('restaurant') || cat.contains('food') || cat.contains('cafe')) {
+        return POICategory.restaurant;
+      }
+      if (cat.contains('hotel') || cat.contains('accommodation')) {
+        return POICategory.hotel;
+      }
+      if (cat.contains('shop') || cat.contains('shopping') || cat.contains('supermarket')) {
+        return POICategory.shop;
+      }
+      if (cat.contains('hospital') || cat.contains('pharmacy') || cat.contains('medical')) {
+        return POICategory.health;
+      }
+      if (cat.contains('school') || cat.contains('education') || cat.contains('university')) {
+        return POICategory.education;
+      }
+      if (cat.contains('transport') || cat.contains('station') || cat.contains('airport')) {
+        return POICategory.transport;
+      }
+      if (cat.contains('attraction') || cat.contains('museum') || cat.contains('tourism')) {
+        return POICategory.attraction;
+      }
+      if (cat.contains('entertainment') || cat.contains('cinema') || cat.contains('theater')) {
+        return POICategory.entertainment;
+      }
+      if (cat.contains('sport') || cat.contains('gym') || cat.contains('stadium')) {
+        return POICategory.sport;
+      }
+      if (cat.contains('bank') || cat.contains('service')) {
+        return POICategory.service;
+      }
+    }
+    
+    return POICategory.attraction; // Catégorie par défaut
   }
 
-  /// Construit une adresse à partir des tags
-  String _buildAddress(Map<String, dynamic> tags) {
-    final parts = <String>[];
-    if (tags['addr:housenumber'] != null) parts.add(tags['addr:housenumber']);
-    if (tags['addr:street'] != null) parts.add(tags['addr:street']);
-    if (tags['addr:city'] != null) parts.add(tags['addr:city']);
-    return parts.join(', ');
-  }
+
 
   /// Génère des POI locaux de base pour fallback
   List<POI> _generateLocalPOIs(

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'core/config/environment_config.dart';
 import 'features/favorites/providers/favorites_provider.dart';
 import 'features/map/providers/map_provider.dart';
 import 'features/search/providers/search_provider.dart';
@@ -40,6 +41,10 @@ void main() async {
 
   // Initialisation des services de base
   try {
+    // Initialiser la configuration d'environnement en premier
+    await EnvironmentConfig.initialize();
+    debugPrint('✅ Configuration d\'environnement initialisée');
+    
     await UserService.instance.initialize();
     await CacheService.initialize();
     await StorageService.initialize();

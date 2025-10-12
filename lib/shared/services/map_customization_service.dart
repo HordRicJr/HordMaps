@@ -3,7 +3,7 @@ import 'storage_service.dart';
 
 /// Styles de carte disponibles
 enum MapStyle {
-  standard('Standard', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+  standard('Standard', 'https://atlas.microsoft.com/map/tile?api-version=2.0&tilesetId=microsoft.base.labels'),
   dark(
     'Sombre',
     'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',

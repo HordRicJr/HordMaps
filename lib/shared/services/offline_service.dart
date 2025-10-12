@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'storage_service.dart';
+import '../../core/config/environment_config.dart';
 
 // Classes simplifiées pour le cache offline
 class LatLngBounds {
@@ -370,7 +371,7 @@ class OfflineService extends ChangeNotifier {
   /// Télécharge une tuile
   Future<void> _downloadTile(int x, int y, int zoom, String regionId) async {
     try {
-      final url = 'https://tile.openstreetmap.org/$zoom/$x/$y.png';
+      final url = AzureTileUrls.standard.replaceAll('{z}', zoom.toString()).replaceAll('{x}', x.toString()).replaceAll('{y}', y.toString());
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {

@@ -22,8 +22,8 @@ class ShareService {
     // URLs pour différentes plateformes
     final String googleMapsUrl =
         'https://maps.google.com/?q=${position.latitude},${position.longitude}';
-    final String openStreetMapUrl =
-        'https://www.openstreetmap.org/?mlat=${position.latitude}&mlon=${position.longitude}&zoom=15';
+    final String azureMapsUrl =
+        'https://www.bing.com/maps?cp=${position.latitude}~${position.longitude}&lvl=15';
 
     final String shareText =
         '''
@@ -33,7 +33,7 @@ ${desc.isNotEmpty ? '$desc\n' : ''}
 
 🔗 Voir sur Google Maps: $googleMapsUrl
 
-🌍 Voir sur OpenStreetMap: $openStreetMapUrl
+🗺️ Voir sur Azure Maps: $azureMapsUrl
 
 📱 Partagé via $_appName - Navigation GPS Togo
 ''';

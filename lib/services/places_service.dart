@@ -2,73 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import '../core/config/environment_config.dart';
 
 class PlacesService {
-  static const String _overpassUrl = 'https://overpass-api.de/api/interpreter';
-  static const String _nominatimUrl =
-      'https://nominatim.openstreetmap.org/search';
 
-  // Types de lieux avec leurs tags OpenStreetMap et icônes correspondantes
-  static const Map<String, Map<String, dynamic>> _placeTypes = {
-    'restaurant': {
-      'amenity': 'restaurant',
-      'icon': Icons.restaurant,
-      'label': 'Restaurant',
-    },
-    'fast_food': {
-      'amenity': 'fast_food',
-      'icon': Icons.fastfood,
-      'label': 'Fast Food',
-    },
-    'cafe': {'amenity': 'cafe', 'icon': Icons.local_cafe, 'label': 'Café'},
-    'pharmacy': {
-      'amenity': 'pharmacy',
-      'icon': Icons.local_pharmacy,
-      'label': 'Pharmacie',
-    },
-    'hospital': {
-      'amenity': 'hospital',
-      'icon': Icons.local_hospital,
-      'label': 'Hôpital',
-    },
-    'bank': {
-      'amenity': 'bank',
-      'icon': Icons.account_balance,
-      'label': 'Banque',
-    },
-    'atm': {'amenity': 'atm', 'icon': Icons.atm, 'label': 'Distributeur'},
-    'fuel': {
-      'amenity': 'fuel',
-      'icon': Icons.local_gas_station,
-      'label': 'Station-Service',
-    },
-    'supermarket': {
-      'shop': 'supermarket',
-      'icon': Icons.shopping_cart,
-      'label': 'Supermarché',
-    },
-    'bakery': {
-      'shop': 'bakery',
-      'icon': Icons.bakery_dining,
-      'label': 'Boulangerie',
-    },
-    'school': {'amenity': 'school', 'icon': Icons.school, 'label': 'École'},
-    'library': {
-      'amenity': 'library',
-      'icon': Icons.library_books,
-      'label': 'Bibliothèque',
-    },
-    'post_office': {
-      'amenity': 'post_office',
-      'icon': Icons.local_post_office,
-      'label': 'Poste',
-    },
-    'parking': {
-      'amenity': 'parking',
-      'icon': Icons.local_parking,
-      'label': 'Parking',
-    },
-  };
+
 
   /// Récupère les lieux proches basés sur la position GPS réelle
   static Future<List<Map<String, dynamic>>> getNearbyPlaces({
@@ -78,25 +16,26 @@ class PlacesService {
     int maxResults = 15,
   }) async {
     try {
-      // Construire la requête Overpass
-      String overpassQuery = _buildOverpassQuery(
-        latitude,
-        longitude,
-        radiusKm,
-        maxResults,
-      );
-
-      final response = await http.post(
-        Uri.parse(_overpassUrl),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'data=$overpassQuery',
+      // Utiliser Azure Maps Search POI API
+      final response = await http.get(
+        Uri.parse('${AzureMapsConfig.searchUrl}/poi/json').replace(
+          queryParameters: {
+            'api-version': AzureMapsConfig.apiVersion,
+            'subscription-key': AzureMapsConfig.apiKey,
+            'lat': latitude.toString(),
+            'lon': longitude.toString(),
+            'radius': (radiusKm * 1000).round().toString(), // Convertir km en m
+            'limit': maxResults.toString(),
+            'language': 'fr-FR',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return _parseOverpassResponse(data, latitude, longitude);
+        return _parseAzureMapsResponse(data, latitude, longitude);
       } else {
-        debugPrint('Erreur API Overpass: ${response.statusCode}');
+        debugPrint('Erreur API Azure Maps: ${response.statusCode}');
         return _getFallbackPlaces(latitude, longitude);
       }
     } catch (e) {
@@ -105,73 +44,33 @@ class PlacesService {
     }
   }
 
-  /// Construit la requête Overpass pour récupérer les lieux d'intérêt
-  static String _buildOverpassQuery(
-    double lat,
-    double lon,
-    double radiusKm,
-    int maxResults,
-  ) {
-    double radiusM = radiusKm * 1000;
 
-    // Créer une liste des requêtes pour chaque type de lieu
-    List<String> queries = [];
 
-    for (String placeType in _placeTypes.keys) {
-      Map<String, dynamic>? typeInfo = _placeTypes[placeType];
-      if (typeInfo == null) continue;
-
-      String? key = typeInfo.keys
-          .where((k) => k != 'icon' && k != 'label')
-          .firstOrNull;
-      if (key == null) continue;
-
-      String? value = typeInfo[key];
-      if (value == null) continue;
-
-      queries.add('node["$key"="$value"](around:$radiusM,$lat,$lon);');
-      queries.add('way["$key"="$value"](around:$radiusM,$lat,$lon);');
-    }
-
-    return '''
-[out:json][timeout:25];
-(
-  ${queries.join('\n  ')}
-);
-out center meta;
-''';
-  }
-
-  /// Parse la réponse de l'API Overpass
-  static List<Map<String, dynamic>> _parseOverpassResponse(
+  /// Parse la réponse de l'API Azure Maps
+  static List<Map<String, dynamic>> _parseAzureMapsResponse(
     Map<String, dynamic> data,
     double userLat,
     double userLon,
   ) {
     List<Map<String, dynamic>> places = [];
 
-    if (data['elements'] != null) {
-      for (var element in data['elements']) {
+    if (data['results'] != null) {
+      for (var result in data['results']) {
         try {
-          double placeLat =
-              element['lat']?.toDouble() ??
-              element['center']?['lat']?.toDouble() ??
-              0.0;
-          double placeLon =
-              element['lon']?.toDouble() ??
-              element['center']?['lon']?.toDouble() ??
-              0.0;
+          final position = result['position'] as Map<String, dynamic>? ?? {};
+          double placeLat = position['lat']?.toDouble() ?? 0.0;
+          double placeLon = position['lon']?.toDouble() ?? 0.0;
 
           if (placeLat == 0.0 || placeLon == 0.0) continue;
 
-          Map<String, dynamic> tags = element['tags'] ?? {};
-          String name = tags['name'] ?? _getDefaultName(tags);
+          final poi = result['poi'] as Map<String, dynamic>? ?? {};
+          final address = result['address'] as Map<String, dynamic>? ?? {};
+          String name = poi['name'] ?? address['freeformAddress'] ?? '';
 
           if (name.isEmpty) continue;
 
-          // Déterminer le type de lieu
-          Map<String, dynamic>? placeTypeInfo = _getPlaceTypeInfo(tags);
-          if (placeTypeInfo == null) continue;
+          // Déterminer le type de lieu à partir des catégories Azure Maps
+          Map<String, dynamic> placeTypeInfo = _getAzurePlaceTypeInfo(result);
 
           // Calculer la distance
           double distanceM = Geolocator.distanceBetween(
@@ -194,10 +93,10 @@ out center meta;
             'latitude': placeLat,
             'longitude': placeLon,
             'isReal': true,
-            'address': _getAddress(tags),
-            'phone': tags['phone'] ?? '',
-            'website': tags['website'] ?? '',
-            'openingHours': tags['opening_hours'] ?? '',
+            'address': address['freeformAddress'] ?? '',
+            'phone': poi['phone'] ?? '',
+            'website': poi['url'] ?? '',
+            'openingHours': '', // Azure Maps ne fournit pas les heures d'ouverture dans cette API
           });
         } catch (e) {
           debugPrint('Erreur lors du parsing d\'un élément: $e');
@@ -211,58 +110,47 @@ out center meta;
     return places.take(15).toList();
   }
 
-  /// Détermine le type de lieu basé sur les tags OpenStreetMap
-  static Map<String, dynamic>? _getPlaceTypeInfo(Map<String, dynamic> tags) {
-    for (String placeType in _placeTypes.keys) {
-      Map<String, dynamic> typeInfo = _placeTypes[placeType]!;
-
-      for (String key in typeInfo.keys) {
-        if (key != 'icon' && key != 'label') {
-          if (tags[key] == typeInfo[key]) {
-            return {'icon': typeInfo['icon'], 'label': typeInfo['label']};
-          }
-        }
+  /// Détermine le type de lieu basé sur les données Azure Maps
+  static Map<String, dynamic> _getAzurePlaceTypeInfo(Map<String, dynamic> result) {
+    final poi = result['poi'] as Map<String, dynamic>? ?? {};
+    final categories = poi['categories'] as List<dynamic>? ?? [];
+    
+    // Mapper les catégories Azure Maps vers nos types de lieux
+    for (String category in categories) {
+      switch (category.toLowerCase()) {
+        case 'restaurant':
+        case 'food':
+          return {'icon': Icons.restaurant, 'label': 'Restaurant'};
+        case 'gas station':
+        case 'petrol station':
+          return {'icon': Icons.local_gas_station, 'label': 'Station-service'};
+        case 'pharmacy':
+          return {'icon': Icons.local_pharmacy, 'label': 'Pharmacie'};
+        case 'hospital':
+        case 'medical':
+          return {'icon': Icons.local_hospital, 'label': 'Hôpital'};
+        case 'bank':
+        case 'atm':
+          return {'icon': Icons.account_balance, 'label': 'Banque'};
+        case 'hotel':
+        case 'accommodation':
+          return {'icon': Icons.hotel, 'label': 'Hôtel'};
+        case 'school':
+        case 'education':
+          return {'icon': Icons.school, 'label': 'École'};
+        case 'shopping':
+        case 'supermarket':
+          return {'icon': Icons.shopping_cart, 'label': 'Supermarché'};
+        case 'cafe':
+          return {'icon': Icons.local_cafe, 'label': 'Café'};
       }
     }
-    return null;
+    
+    // Type par défaut
+    return {'icon': Icons.place, 'label': 'Lieu d\'intérêt'};
   }
 
-  /// Génère un nom par défaut si aucun nom n'est disponible
-  static String _getDefaultName(Map<String, dynamic> tags) {
-    // Essayer différents champs de nom
-    if (tags['brand'] != null) return tags['brand'];
-    if (tags['operator'] != null) return tags['operator'];
 
-    // Générer un nom basé sur le type
-    for (String placeType in _placeTypes.keys) {
-      Map<String, dynamic> typeInfo = _placeTypes[placeType]!;
-
-      for (String key in typeInfo.keys) {
-        if (key != 'icon' && key != 'label' && tags[key] == typeInfo[key]) {
-          return typeInfo['label'];
-        }
-      }
-    }
-
-    return 'Lieu d\'intérêt';
-  }
-
-  /// Génère une adresse à partir des tags
-  static String _getAddress(Map<String, dynamic> tags) {
-    List<String> addressParts = [];
-
-    if (tags['addr:housenumber'] != null) {
-      addressParts.add(tags['addr:housenumber']);
-    }
-    if (tags['addr:street'] != null) {
-      addressParts.add(tags['addr:street']);
-    }
-    if (tags['addr:city'] != null) {
-      addressParts.add(tags['addr:city']);
-    }
-
-    return addressParts.join(' ');
-  }
 
   /// Fournit des lieux de secours en cas d'échec de l'API
   static List<Map<String, dynamic>> _getFallbackPlaces(
@@ -301,7 +189,7 @@ out center meta;
     ];
   }
 
-  /// Recherche de lieux par nom/adresse via Nominatim
+  /// Recherche de lieux par nom/adresse via Azure Maps
   static Future<List<Map<String, dynamic>>> searchPlaces(
     String query, {
     double? nearLat,
@@ -324,7 +212,13 @@ out center meta;
         params['viewbox'] = _buildViewBox(nearLat, nearLon, 0.1);
       }
 
-      final uri = Uri.parse(_nominatimUrl).replace(queryParameters: params);
+      final uri = Uri.parse('${AzureMapsConfig.searchUrl}/address/json').replace(queryParameters: {
+        'api-version': AzureMapsConfig.apiVersion,
+        'subscription-key': AzureMapsConfig.apiKey,
+        'query': params['q'] ?? '',
+        'language': 'fr-FR',
+        ...params,
+      });
 
       final response = await http.get(
         uri,
@@ -332,8 +226,8 @@ out center meta;
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return _parseNominatimResponse(data, nearLat, nearLon);
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        return _parseAzureMapsSearchResponse(responseData, nearLat ?? 0.0, nearLon ?? 0.0);
       }
     } catch (e) {
       debugPrint('Erreur lors de la recherche: $e');
@@ -346,20 +240,25 @@ out center meta;
     return '${lon - delta},${lat - delta},${lon + delta},${lat + delta}';
   }
 
-  static List<Map<String, dynamic>> _parseNominatimResponse(
-    List<dynamic> data,
-    double? userLat,
-    double? userLon,
+  static List<Map<String, dynamic>> _parseAzureMapsSearchResponse(
+    Map<String, dynamic> data,
+    double userLat,
+    double userLon,
   ) {
     List<Map<String, dynamic>> results = [];
+    final List<dynamic> items = data['results'] ?? [];
 
-    for (var item in data) {
+    for (var item in items) {
       try {
-        double lat = double.parse(item['lat']);
-        double lon = double.parse(item['lon']);
+        final position = item['position'] as Map<String, dynamic>? ?? {};
+        final address = item['address'] as Map<String, dynamic>? ?? {};
+        final poi = item['poi'] as Map<String, dynamic>? ?? {};
+        
+        double lat = position['lat']?.toDouble() ?? 0.0;
+        double lon = position['lon']?.toDouble() ?? 0.0;
 
         String distance = '';
-        if (userLat != null && userLon != null) {
+        if (lat != 0.0 && lon != 0.0) {
           double distanceM = Geolocator.distanceBetween(
             userLat,
             userLon,
@@ -371,13 +270,15 @@ out center meta;
               : '${(distanceM / 1000).toStringAsFixed(1)}km';
         }
 
+        String name = poi['name'] ?? address['freeformAddress'] ?? 'Lieu inconnu';
+        
         results.add({
-          'name': item['display_name'] ?? 'Lieu inconnu',
-          'type': item['type'] ?? 'Lieu',
+          'name': name,
+          'type': item['type'] ?? 'POI',
           'distance': distance,
           'latitude': lat,
           'longitude': lon,
-          'address': item['display_name'] ?? '',
+          'address': address['freeformAddress'] ?? '',
           'isReal': true,
           'icon': Icons.place,
         });

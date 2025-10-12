@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../services/crash_proof_location_service.dart';
+import '../../../core/config/environment_config.dart';
 
 class MapProvider extends ChangeNotifier {
   final MapController _mapController = MapController();
@@ -16,7 +17,7 @@ class MapProvider extends ChangeNotifier {
   bool _isFollowingUser = false;
   final List<Marker> _markers = [];
   final List<Polyline> _routes = [];
-  String _tileLayerUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  String _tileLayerUrl = AzureTileUrls.standard;
 
   // Points d'itinéraire
   LatLng? _startPoint;

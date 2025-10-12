@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../models/transport_models.dart';
 import '../../features/navigation/providers/provider_navigation.dart';
 import '../../services/cache_service.dart';
-import '../../services/osm_routing_service.dart';
+import '../../services/azure_maps_routing_service.dart';
 import '../../services/location_service.dart';
 import '../../services/voice_guidance_service.dart';
 
@@ -178,14 +178,14 @@ class AppController extends ChangeNotifier {
       // Utiliser le mode de transport par défaut si non spécifié
       transportMode ??= TransportMode.car;
 
-      // Calculer la route
-      final result = await OpenStreetMapRoutingService.calculateRoute(
+      // Calculer la route avec Azure Maps
+      final result = await AzureMapsRoutingService.calculateRoute(
         start: start,
         end: end,
         transportMode: transportMode.id,
         avoidTolls: options?['avoidTolls'] ?? false,
         avoidHighways: options?['avoidHighways'] ?? false,
-        includeTraffic: options?['includeTraffic'] ?? true,
+        avoidFerries: options?['avoidFerries'] ?? false,
       );
 
       // Sauvegarder en cache si possible

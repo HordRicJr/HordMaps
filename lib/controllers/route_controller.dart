@@ -4,7 +4,7 @@ import 'dart:async';
 
 import '../models/transport_models.dart';
 import '../models/navigation_models.dart';
-import '../services/osm_routing_service.dart';
+import '../services/azure_maps_routing_service.dart';
 import '../services/cache_service.dart';
 
 /// Controller MVC pour la gestion des routes et navigation
@@ -118,9 +118,9 @@ class RouteController extends ChangeNotifier {
         return true;
       }
 
-      // Calculer nouvelle route
+      // Calculer nouvelle route avec Azure Maps
       final result =
-          await OpenStreetMapRoutingService.calculateRoute(
+          await AzureMapsRoutingService.calculateRoute(
             start: start,
             end: end,
             transportMode: _currentOptions.transportMode.id,
@@ -193,7 +193,7 @@ class RouteController extends ChangeNotifier {
       // Calculer avec différentes options
       for (final mode in TransportMode.allModes.where((m) => m.isAvailable)) {
         if (mode.id != _currentOptions.transportMode.id) {
-          final result = await OpenStreetMapRoutingService.calculateRoute(
+          final result = await AzureMapsRoutingService.calculateRoute(
             start: _startPoint!,
             end: _endPoint!,
             transportMode: mode.id,
@@ -210,7 +210,6 @@ class RouteController extends ChangeNotifier {
     }
   }
 
-  /// Mappe les modes de transport vers les profils OSM
   /// Sauvegarde l'état actuel
   Future<void> saveState() async {
     try {

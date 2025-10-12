@@ -7,7 +7,7 @@ import '../../../services/voice_guidance_service.dart';
 import '../../../services/navigation_notification_service.dart';
 import '../../../services/real_time_navigation_service.dart';
 import '../../../services/background_navigation_service.dart';
-import '../../../services/osm_routing_service.dart';
+import '../../../services/azure_maps_routing_service.dart';
 import '../../../services/event_throttle_service.dart';
 import '../../../services/central_event_manager.dart';
 import '../../../models/navigation_models.dart';
@@ -205,8 +205,8 @@ class NavigationProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Calculer une nouvelle route
-      final route = await OpenStreetMapRoutingService.calculateRoute(
+      // Calculer une nouvelle route avec Azure Maps
+      final route = await AzureMapsRoutingService.calculateRoute(
         start: start,
         end: end,
         transportMode: transportMode ?? _routeProfile,
@@ -240,10 +240,12 @@ class NavigationProvider extends ChangeNotifier {
     if (_currentRoute == null) return;
 
     try {
-      _trafficData = await OpenStreetMapRoutingService.getTrafficData(
-        _currentRoute!.points,
-      );
+      // TODO: Implémenter les données de trafic avec Azure Maps Traffic API
+      // _trafficData = await AzureMapsRoutingService.getTrafficData(
+      //   _currentRoute!.points,
+      // );
 
+      // Pour l'instant, utiliser les données de route existantes
       // Ajuster le temps estimé selon le trafic
       if (_trafficData != null && _trafficData!['delay'] != null) {
         final delaySeconds = (_trafficData!['delay'] as num).toInt();

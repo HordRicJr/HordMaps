@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:dio/dio.dart';
 import 'safe_location_service.dart';
 import 'circuit_breaker_service.dart';
+import '../core/config/environment_config.dart';
 
 /// Service de géolocalisation avancé avec données en temps réel
 class AdvancedLocationService extends ChangeNotifier {
@@ -148,12 +149,12 @@ class AdvancedLocationService extends ChangeNotifier {
       final response = await ApiCircuitBreaker.execute(
         'reverse_geocode',
         () => _dio.get(
-          'https://nominatim.openstreetmap.org/reverse',
+          '${AzureMapsConfig.searchUrl}/address/reverse/json',
           queryParameters: {
-            'lat': position.latitude,
-            'lon': position.longitude,
-            'format': 'json',
-            'addressdetails': 1,
+            'api-version': AzureMapsConfig.apiVersion,  
+            'subscription-key': AzureMapsConfig.apiKey,
+            'query': '${position.latitude},${position.longitude}',
+            'language': 'fr-FR',
           },
         ),
         fallbackValue: null,
@@ -161,19 +162,15 @@ class AdvancedLocationService extends ChangeNotifier {
       );
 
       if (response?.statusCode == 200 && response?.data != null) {
-        final data = response!.data;
-        final address = data['address'] ?? {};
-
-        // Construire une adresse lisible
-        List<String> addressParts = [];
-        if (address['house_number'] != null) {
-          addressParts.add(address['house_number']);
+        final responseData = response!.data as Map<String, dynamic>;
+        final addresses = responseData['addresses'] as List<dynamic>? ?? [];
+        
+        if (addresses.isNotEmpty) {
+          final addressData = addresses.first['address'] as Map<String, dynamic>? ?? {};
+          _currentAddress = addressData['freeformAddress'] ?? 'Adresse non disponible';
+        } else {
+          _currentAddress = 'Adresse non disponible';
         }
-        if (address['road'] != null) addressParts.add(address['road']);
-        if (address['city'] != null) addressParts.add(address['city']);
-        if (address['country'] != null) addressParts.add(address['country']);
-
-        _currentAddress = addressParts.join(', ');
         notifyListeners();
       } else {
         _currentAddress = 'Adresse non disponible';
@@ -196,33 +193,21 @@ class AdvancedLocationService extends ChangeNotifier {
     if (_currentPosition == null) return;
 
     try {
-      // Requête Overpass API pour les lieux d'intérêt
-      const overpassQuery = '''
-[out:json][timeout:25];
-(
-  node["amenity"~"restaurant|cafe|hospital|pharmacy|bank|fuel|school"]["name"]
-    (around:2000,{lat},{lon});
-  node["shop"~"supermarket|convenience|bakery"]["name"]
-    (around:2000,{lat},{lon});
-  node["tourism"~"attraction|hotel|museum"]["name"]
-    (around:2000,{lat},{lon});
-  node["leisure"~"park|sports_centre"]["name"]
-    (around:1000,{lat},{lon});
-);
-out center meta;
-''';
-
-      final query = overpassQuery
-          .replaceAll('{lat}', _currentPosition!.latitude.toString())
-          .replaceAll('{lon}', _currentPosition!.longitude.toString());
-
+      // Utiliser Azure Maps Search POI API pour les lieux d'intérêt
       final response = await ApiCircuitBreaker.execute(
         'nearby_places',
-        () => _dio.post(
-          'https://overpass-api.de/api/interpreter',
-          data: query,
+        () => _dio.get(
+          '${AzureMapsConfig.searchUrl}/poi/json',
+          queryParameters: {
+            'api-version': AzureMapsConfig.apiVersion,
+            'subscription-key': AzureMapsConfig.apiKey,
+            'lat': _currentPosition!.latitude,
+            'lon': _currentPosition!.longitude,
+            'radius': 2000,
+            'limit': 50,
+            'language': 'fr-FR',
+          },
           options: Options(
-            headers: {'Content-Type': 'text/plain'},
             receiveTimeout: const Duration(seconds: 15),
           ),
         ),
@@ -232,30 +217,34 @@ out center meta;
 
       if (response?.statusCode == 200 && response?.data != null) {
         final data = response!.data;
-        final elements = data['elements'] as List;
+        final results = data['results'] as List? ?? [];
 
-        _nearbyPlaces = elements.map((element) {
-          final tags = element['tags'] ?? {};
+        _nearbyPlaces = results.map((result) {
+          final position = result['position'] as Map<String, dynamic>? ?? {};
+          final address = result['address'] as Map<String, dynamic>? ?? {};
+          final poi = result['poi'] as Map<String, dynamic>? ?? {};
+          
           return NearbyPlace(
-            id: element['id'].toString(),
-            name: tags['name'] ?? 'Lieu sans nom',
-            position: LatLng(element['lat'], element['lon']),
-            category: _getCategoryFromTags(tags),
-            type:
-                tags['amenity'] ??
-                tags['shop'] ??
-                tags['tourism'] ??
-                tags['leisure'] ??
-                'other',
+            id: result['id']?.toString() ?? '',
+            name: poi['name'] ?? address['freeformAddress']?.split(',')[0] ?? 'Lieu sans nom',
+            position: LatLng(
+              position['lat']?.toDouble() ?? 0.0,
+              position['lon']?.toDouble() ?? 0.0,
+            ),
+            category: _getCategoryFromAzureMaps(result),
+            type: _getTypeFromAzureMaps(result),
             distance: _calculateDistance(
               _currentPosition!,
-              LatLng(element['lat'], element['lon']),
+              LatLng(
+                position['lat']?.toDouble() ?? 0.0,
+                position['lon']?.toDouble() ?? 0.0,
+              ),
             ),
             rating: _generateRealisticRating(),
-            isOpen: _estimateOpenStatus(tags),
-            phone: tags['phone'],
-            website: tags['website'],
-            address: _buildAddress(tags),
+            isOpen: true, // Azure Maps ne fournit pas les heures d'ouverture dans cette API
+            phone: poi['phone'],
+            website: poi['url'],
+            address: address['freeformAddress'] ?? '',
           );
         }).toList();
 
@@ -367,28 +356,52 @@ out center meta;
     );
   }
 
-  /// Détermine la catégorie d'un lieu à partir de ses tags
-  String _getCategoryFromTags(Map<String, dynamic> tags) {
-    if (tags.containsKey('amenity')) {
-      final amenity = tags['amenity'];
-      if (['restaurant', 'cafe', 'fast_food', 'bar'].contains(amenity)) {
+  /// Détermine la catégorie d'un lieu à partir des données Azure Maps
+  String _getCategoryFromAzureMaps(Map<String, dynamic> result) {
+    final poi = result['poi'] as Map<String, dynamic>? ?? {};
+    final categories = poi['categories'] as List<dynamic>? ?? [];
+    
+    for (String category in categories) {
+      String cat = category.toLowerCase();
+      if (cat.contains('restaurant') || cat.contains('food') || cat.contains('cafe')) {
         return 'restaurant';
       }
-      if (['hospital', 'pharmacy', 'dentist', 'clinic'].contains(amenity)) {
+      if (cat.contains('hospital') || cat.contains('pharmacy') || cat.contains('medical')) {
         return 'health';
       }
-      if (['bank', 'atm'].contains(amenity)) return 'finance';
-      if (['fuel'].contains(amenity)) return 'fuel';
-      if (['school', 'university', 'library'].contains(amenity)) {
+      if (cat.contains('bank') || cat.contains('atm') || cat.contains('finance')) {
+        return 'finance';
+      }
+      if (cat.contains('gas') || cat.contains('petrol') || cat.contains('fuel')) {
+        return 'fuel';
+      }
+      if (cat.contains('school') || cat.contains('education') || cat.contains('university')) {
         return 'education';
       }
+      if (cat.contains('shop') || cat.contains('shopping') || cat.contains('supermarket')) {
+        return 'shopping';
+      }
+      if (cat.contains('hotel') || cat.contains('tourism') || cat.contains('attraction')) {
+        return 'tourism';
+      }
+      if (cat.contains('park') || cat.contains('sport') || cat.contains('leisure')) {
+        return 'leisure';
+      }
     }
-
-    if (tags.containsKey('shop')) return 'shopping';
-    if (tags.containsKey('tourism')) return 'tourism';
-    if (tags.containsKey('leisure')) return 'leisure';
-
+    
     return 'other';
+  }
+
+  /// Détermine le type d'un lieu à partir des données Azure Maps
+  String _getTypeFromAzureMaps(Map<String, dynamic> result) {
+    final poi = result['poi'] as Map<String, dynamic>? ?? {};
+    final categories = poi['categories'] as List<dynamic>? ?? [];
+    
+    if (categories.isNotEmpty) {
+      return categories.first.toString();
+    }
+    
+    return 'POI';
   }
 
   /// Génère une note réaliste pour un lieu
@@ -406,78 +419,48 @@ out center meta;
     return 4.0 + random.nextDouble() * 1; // 4-5 étoiles (70%)
   }
 
-  /// Estime si un lieu est ouvert
-  bool _estimateOpenStatus(Map<String, dynamic> tags) {
-    final now = DateTime.now();
-    final hour = now.hour;
 
-    // Logique basique d'estimation
-    if (tags.containsKey('opening_hours')) {
-      // Ici on pourrait parser les heures d'ouverture réelles
-      return hour >= 8 && hour <= 22;
-    }
-
-    // Estimation par type
-    final amenity = tags['amenity'] ?? '';
-    if (['restaurant', 'cafe'].contains(amenity)) {
-      return hour >= 7 && hour <= 23;
-    }
-    if (['pharmacy', 'hospital'].contains(amenity)) {
-      return true; // 24h pour certains services de santé
-    }
-    if (['bank'].contains(amenity)) {
-      return hour >= 9 && hour <= 17 && now.weekday <= 5;
-    }
-
-    return hour >= 9 && hour <= 20; // Par défaut
-  }
-
-  /// Construit une adresse à partir des tags
-  String _buildAddress(Map<String, dynamic> tags) {
-    final parts = <String>[];
-
-    if (tags['addr:housenumber'] != null) parts.add(tags['addr:housenumber']);
-    if (tags['addr:street'] != null) parts.add(tags['addr:street']);
-    if (tags['addr:city'] != null) parts.add(tags['addr:city']);
-    if (tags['addr:postcode'] != null) parts.add(tags['addr:postcode']);
-
-    return parts.join(', ');
-  }
 
   /// Recherche des lieux par requête
   Future<List<NearbyPlace>> searchPlaces(String query) async {
     if (_currentPosition == null) return [];
 
     try {
-      final url =
-          'https://nominatim.openstreetmap.org/search?'
-          'q=$query&'
-          'lat=${_currentPosition!.latitude}&'
-          'lon=${_currentPosition!.longitude}&'
-          'radius=5000&'
-          'format=json&'
-          'limit=20';
-
-      final response = await _dio.get(url);
+      final response = await _dio.get(
+        '${AzureMapsConfig.searchUrl}/address/json',
+        queryParameters: {
+          'api-version': AzureMapsConfig.apiVersion,
+          'subscription-key': AzureMapsConfig.apiKey,
+          'query': query,
+          'lat': _currentPosition!.latitude,
+          'lon': _currentPosition!.longitude,
+          'radius': 5000,
+          'limit': 20,
+          'language': 'fr-FR',
+        },
+      );
 
       if (response.statusCode == 200) {
-        final results = response.data as List;
+        final responseData = response.data as Map<String, dynamic>;
+        final results = responseData['results'] as List<dynamic>? ?? [];
         return results.map((result) {
+          final positionData = result['position'] as Map<String, dynamic>? ?? {};
+          final address = result['address'] as Map<String, dynamic>? ?? {};
           final position = LatLng(
-            double.parse(result['lat']),
-            double.parse(result['lon']),
+            positionData['lat']?.toDouble() ?? 0.0,
+            positionData['lon']?.toDouble() ?? 0.0,
           );
 
           return NearbyPlace(
-            id: result['place_id'].toString(),
-            name: result['display_name'].split(',')[0],
+            id: result['id']?.toString() ?? '',
+            name: result['poi']?['name'] ?? address['freeformAddress']?.split(',')[0] ?? '',
             position: position,
-            category: _getCategoryFromType(result['type']),
-            type: result['type'],
+            category: _getCategoryFromType(result['type'] ?? 'POI'),
+            type: result['type'] ?? 'POI',
             distance: _calculateDistance(_currentPosition!, position),
             rating: _generateRealisticRating(),
             isOpen: true,
-            address: result['display_name'],
+            address: address['freeformAddress'] ?? '',
           );
         }).toList();
       }

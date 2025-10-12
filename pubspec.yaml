@@ -47,6 +47,9 @@ dependencies:
   http: ^1.2.1
   dio: ^5.4.3+1
   
+  # Environment configuration
+  flutter_dotenv: ^5.1.0
+  
   # State management
   provider: ^6.1.2
   
@@ -120,6 +123,7 @@ flutter:
     - assets/images/
     - assets/animations/
     - assets/icons/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

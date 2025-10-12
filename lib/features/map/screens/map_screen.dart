@@ -12,6 +12,7 @@ import '../widgets/navigation_progress_widget.dart';
 import '../../../shared/widgets/animated_search_bar.dart';
 import '../widgets/navigation_panel.dart';
 import '../../../services/real_time_navigation_service.dart';
+import '../../../core/config/environment_config.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -163,9 +164,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             },
           ),
           children: [
-            // Couche de tuiles OpenStreetMap
+            // Couche de tuiles Azure Maps
             TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              urlTemplate: AzureTileUrls.standard,
               userAgentPackageName: 'com.example.hordmaps',
               tileProvider: NetworkTileProvider(),
             ),
