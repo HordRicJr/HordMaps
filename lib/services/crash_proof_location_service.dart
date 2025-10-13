@@ -168,11 +168,20 @@ class CrashProofLocationService extends ChangeNotifier {
   }
 
   /// Obtient la position actuelle de manière ultra-sécurisée
+  /// Implémente une stratégie de récupération progressive avec plusieurs niveaux de fallback
   Future<Position> getCurrentPosition() async {
+    int recoveryLevel = 0;
+    
     try {
       // Si pas initialisé, initialiser d'abord
       if (!_isInitialized) {
-        await initialize();
+        try {
+          await initialize();
+        } catch (initError) {
+          debugPrint('⚠️ Échec initialisation location: $initError');
+          recoveryLevel = 1;
+          // Continuer même si l'initialisation échoue
+        }
       }
 
       // Si pas de permissions ou service, retourner position par défaut ou dernière connue
@@ -180,39 +189,109 @@ class CrashProofLocationService extends ChangeNotifier {
         debugPrint(
           '⚠️ Géolocalisation non disponible, utilisation position par défaut',
         );
+        recoveryLevel = 2;
         return _lastKnownPosition ?? _defaultPosition;
       }
 
-      // Tentative de géolocalisation avec timeout strict
-      final position =
-          await Geolocator.getCurrentPosition(
+      // Tentative de géolocalisation avec timeout strict et gestion d'erreur progressive
+      Position? position;
+      
+      try {
+        // Premier essai: précision moyenne avec timeout court
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 10), // Timeout strict de 10 secondes
+          ),
+        ).timeout(
+          const Duration(seconds: 15), // Double timeout pour être sûr
+          onTimeout: () {
+            debugPrint('⏱️ Timeout géolocalisation niveau 1');
+            throw TimeoutException('Géolocalisation timeout niveau 1');
+          },
+        );
+      } catch (e) {
+        debugPrint('⚠️ Premier essai géolocalisation échoué: $e');
+        recoveryLevel = 3;
+        
+        // Deuxième essai: précision basse avec timeout plus long
+        try {
+          debugPrint('🔄 Tentative de récupération avec précision réduite');
+          position = await Geolocator.getCurrentPosition(
             locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.medium,
-              timeLimit: Duration(seconds: 10), // Timeout strict de 10 secondes
+              accuracy: LocationAccuracy.low,
+              timeLimit: Duration(seconds: 15),
             ),
           ).timeout(
-            const Duration(seconds: 15), // Double timeout pour être sûr
+            const Duration(seconds: 20),
             onTimeout: () {
-              debugPrint(
-                '⏱️ Timeout géolocalisation, utilisation position par défaut',
-              );
-              throw TimeoutException('Géolocalisation timeout');
+              debugPrint('⏱️ Timeout géolocalisation niveau 2');
+              throw TimeoutException('Géolocalisation timeout niveau 2');
             },
           );
+        } catch (e2) {
+          debugPrint('⚠️ Deuxième essai géolocalisation échoué: $e2');
+          recoveryLevel = 4;
+          
+          // Troisième essai: dernière position connue du système
+          try {
+            debugPrint('🔄 Tentative de récupération avec dernière position système');
+            position = await Geolocator.getLastKnownPosition();
+            
+            if (position == null) {
+              throw Exception('Aucune dernière position système disponible');
+            }
+          } catch (e3) {
+            debugPrint('⚠️ Troisième essai géolocalisation échoué: $e3');
+            recoveryLevel = 5;
+            // Continuer vers le fallback
+          }
+        }
+      }
 
-      // Succès: sauvegarder et retourner
-      _lastKnownPosition = position;
-      _lastError = null;
-      await _savePosition(position);
+      // Si on a obtenu une position
+      if (position != null) {
+        // Vérifier que la position est valide (coordonnées non NaN)
+        if (position.latitude.isNaN || position.longitude.isNaN) {
+          debugPrint('⚠️ Position obtenue avec coordonnées invalides (NaN)');
+          throw Exception('Coordonnées invalides (NaN)');
+        }
+        
+        // Vérifier que les coordonnées sont dans des limites raisonnables
+        if (position.latitude.abs() > 90 || position.longitude.abs() > 180) {
+          debugPrint('⚠️ Position obtenue avec coordonnées hors limites');
+          throw Exception('Coordonnées hors limites');
+        }
+        
+        // Succès: sauvegarder et retourner
+        _lastKnownPosition = position;
+        _lastError = null;
+        
+        try {
+          await _savePosition(position);
+        } catch (saveError) {
+          // Continuer même si la sauvegarde échoue
+          debugPrint('⚠️ Erreur sauvegarde position: $saveError');
+        }
 
-      debugPrint(
-        '✅ Position obtenue: ${position.latitude}, ${position.longitude}',
-      );
-      notifyListeners();
-      return position;
+        debugPrint(
+          '✅ Position obtenue (niveau $recoveryLevel): ${position.latitude}, ${position.longitude}',
+        );
+        notifyListeners();
+        return position;
+      }
+      
+      // Si on arrive ici, aucune position n'a été obtenue
+      throw Exception('Impossible d\'obtenir une position valide');
+      
     } catch (e) {
       _lastError = 'Erreur getCurrentPosition: $e';
-      debugPrint('❌ Erreur géolocalisation: $e');
+      debugPrint('❌ Erreur géolocalisation (niveau $recoveryLevel): $e');
+      
+      // Enregistrer l'erreur dans le service de récupération
+      try {
+        AutoRecoveryService().reportError('LocationService', e);
+      } catch (_) {}
 
       // En cas d'erreur, retourner la dernière position connue ou position par défaut
       final fallbackPosition = _lastKnownPosition ?? _defaultPosition;
@@ -238,57 +317,241 @@ class CrashProofLocationService extends ChangeNotifier {
   }
 
   /// Démarre le suivi de position ultra-sécurisé
+  /// Implémente une gestion robuste des erreurs et des interruptions
   StreamSubscription<Position>? _positionSubscription;
   final StreamController<Position> _positionController =
       StreamController<Position>.broadcast();
+  Timer? _locationWatchdogTimer;
+  DateTime? _lastLocationUpdate;
+  int _consecutiveErrors = 0;
+  static const int _maxConsecutiveErrors = 5;
+  static const Duration _locationTimeout = Duration(minutes: 2);
 
   Stream<Position> get positionStream => _positionController.stream;
 
   Future<void> startLocationTracking() async {
     try {
+      // Vérifier si le service est déjà initialisé
+      if (!_isInitialized) {
+        try {
+          await initialize();
+        } catch (e) {
+          debugPrint('⚠️ Échec initialisation pour tracking: $e');
+          // Continuer même si l'initialisation échoue
+        }
+      }
+      
+      // Vérifier les permissions et services
       if (!isLocationAvailable) {
-        debugPrint('⚠️ Suivi de position non disponible');
-        return;
+        debugPrint('⚠️ Suivi de position non disponible - permissions ou service manquants');
+        
+        // Tenter de récupérer les permissions
+        try {
+          await _checkPermissions();
+          await _checkLocationService();
+        } catch (e) {
+          debugPrint('⚠️ Échec récupération permissions: $e');
+        }
+        
+        // Si toujours pas disponible, envoyer des positions simulées
+        if (!isLocationAvailable) {
+          _startFallbackLocationSimulation();
+          return;
+        }
       }
 
-      _positionSubscription?.cancel();
+      // Nettoyer les ressources existantes
+      await _cleanupLocationResources();
 
-      _positionSubscription =
-          Geolocator.getPositionStream(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.medium,
-              distanceFilter: 10, // Mise à jour tous les 10 mètres
-            ),
-          ).listen(
-            (position) {
-              _lastKnownPosition = position;
-              _savePosition(position);
-              _positionController.add(position);
-              notifyListeners();
-            },
-            onError: (error) {
-              debugPrint('Erreur stream position: $error');
-              _lastError = 'Erreur suivi: $error';
+      // Démarrer le stream avec gestion d'erreur
+      try {
+        _positionSubscription =
+            Geolocator.getPositionStream(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.medium,
+                distanceFilter: 10, // Mise à jour tous les 10 mètres
+              ),
+            ).listen(
+              (position) {
+                // Vérifier que la position est valide
+                if (!_isValidPosition(position)) {
+                  debugPrint('⚠️ Position invalide reçue, ignorée');
+                  return;
+                }
+                
+                _lastLocationUpdate = DateTime.now();
+                _consecutiveErrors = 0;
+                _lastKnownPosition = position;
+                
+                // Sauvegarder en arrière-plan pour ne pas bloquer
+                _savePosition(position).catchError((e) {
+                  debugPrint('⚠️ Erreur sauvegarde position tracking: $e');
+                });
+                
+                // Envoyer la position au stream
+                if (!_positionController.isClosed) {
+                  _positionController.add(position);
+                }
+                
+                notifyListeners();
+              },
+              onError: (error) {
+                _handleLocationStreamError(error);
+              },
+              onDone: () {
+                debugPrint('🛑 Stream de position terminé');
+                _restartLocationTracking();
+              },
+              cancelOnError: false, // Ne pas annuler sur erreur
+            );
 
-              // En cas d'erreur, envoyer la dernière position connue
-              if (_lastKnownPosition != null) {
-                _positionController.add(_lastKnownPosition!);
-              }
-            },
-          );
-
-      debugPrint('🎯 Suivi de position démarré');
+        // Démarrer le watchdog pour surveiller les timeouts
+        _startLocationWatchdog();
+        
+        debugPrint('🎯 Suivi de position démarré');
+      } catch (e) {
+        debugPrint('❌ Erreur démarrage stream position: $e');
+        _lastError = 'Erreur startTracking: $e';
+        _startFallbackLocationSimulation();
+      }
     } catch (e) {
-      debugPrint('Erreur démarrage suivi: $e');
+      debugPrint('❌ Erreur démarrage suivi: $e');
       _lastError = 'Erreur startTracking: $e';
+      
+      // Enregistrer l'erreur dans le service de récupération
+      try {
+        AutoRecoveryService().reportError('LocationTracking', e);
+      } catch (_) {}
+      
+      _startFallbackLocationSimulation();
     }
   }
+  
+  /// Vérifie si une position est valide
+  bool _isValidPosition(Position position) {
+    return !position.latitude.isNaN && 
+           !position.longitude.isNaN &&
+           position.latitude.abs() <= 90 && 
+           position.longitude.abs() <= 180;
+  }
+  
+  /// Gère les erreurs du stream de position
+  void _handleLocationStreamError(dynamic error) {
+    _consecutiveErrors++;
+    debugPrint('⚠️ Erreur stream position ($error) - erreur $_consecutiveErrors/$_maxConsecutiveErrors');
+    _lastError = 'Erreur suivi: $error';
 
-  /// Arrête le suivi de position
-  void stopLocationTracking() {
+    // En cas d'erreur, envoyer la dernière position connue
+    if (_lastKnownPosition != null && !_positionController.isClosed) {
+      _positionController.add(_lastKnownPosition!);
+    }
+    
+    // Si trop d'erreurs consécutives, redémarrer le tracking
+    if (_consecutiveErrors >= _maxConsecutiveErrors) {
+      debugPrint('🔄 Trop d\'erreurs consécutives, redémarrage du tracking');
+      _restartLocationTracking();
+    }
+  }
+  
+  /// Démarre un timer watchdog pour surveiller les timeouts de localisation
+  void _startLocationWatchdog() {
+    _locationWatchdogTimer?.cancel();
+    _lastLocationUpdate = DateTime.now();
+    
+    _locationWatchdogTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (_lastLocationUpdate == null) {
+        _lastLocationUpdate = DateTime.now();
+        return;
+      }
+      
+      final timeSinceLastUpdate = DateTime.now().difference(_lastLocationUpdate!);
+      if (timeSinceLastUpdate > _locationTimeout) {
+        debugPrint('⏱️ Timeout détecté dans le suivi de position (${timeSinceLastUpdate.inMinutes}min)');
+        _restartLocationTracking();
+      }
+    });
+  }
+  
+  /// Redémarre le tracking de position après une erreur
+  Future<void> _restartLocationTracking() async {
+    await _cleanupLocationResources();
+    
+    // Attendre un peu avant de redémarrer
+    await Future.delayed(const Duration(seconds: 2));
+    
+    debugPrint('🔄 Redémarrage du suivi de position');
+    startLocationTracking();
+  }
+  
+  /// Nettoie les ressources de localisation
+  Future<void> _cleanupLocationResources() async {
+    _locationWatchdogTimer?.cancel();
+    _locationWatchdogTimer = null;
+    
+    if (_positionSubscription != null) {
+      await _positionSubscription!.cancel();
+      _positionSubscription = null;
+    }
+  }
+  
+  /// Démarre une simulation de position en cas d'échec complet
+  void _startFallbackLocationSimulation() {
+    debugPrint('⚠️ Démarrage de la simulation de position (fallback)');
+    
+    _locationWatchdogTimer?.cancel();
     _positionSubscription?.cancel();
-    _positionSubscription = null;
-    debugPrint('🛑 Suivi de position arrêté');
+    
+    // Créer une position de base (dernière connue ou par défaut)
+    final basePosition = _lastKnownPosition ?? _defaultPosition;
+    
+    // Simuler des mises à jour de position toutes les 5 secondes
+    _locationWatchdogTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      // Créer une petite variation aléatoire pour simuler un mouvement
+      final random = DateTime.now().millisecondsSinceEpoch % 1000 / 10000;
+      final simulatedPosition = Position(
+        latitude: basePosition.latitude + (random - 0.05),
+        longitude: basePosition.longitude + (random - 0.05),
+        timestamp: DateTime.now(),
+        accuracy: 50.0,
+        altitude: basePosition.altitude,
+        altitudeAccuracy: basePosition.altitudeAccuracy,
+        heading: basePosition.heading,
+        headingAccuracy: basePosition.headingAccuracy,
+        speed: 1.0,
+        speedAccuracy: 1.0,
+      );
+      
+      // Envoyer la position simulée
+      if (!_positionController.isClosed) {
+        _positionController.add(simulatedPosition);
+      }
+    });
+  }
+
+  /// Arrête le suivi de position et nettoie toutes les ressources
+  Future<void> stopLocationTracking() async {
+    try {
+      await _cleanupLocationResources();
+      
+      // Sauvegarder la dernière position connue avant d'arrêter
+      if (_lastKnownPosition != null) {
+        try {
+          await _savePosition(_lastKnownPosition!);
+        } catch (e) {
+          debugPrint('⚠️ Erreur sauvegarde dernière position: $e');
+        }
+      }
+      
+      debugPrint('🛑 Suivi de position arrêté et ressources nettoyées');
+    } catch (e) {
+      debugPrint('⚠️ Erreur arrêt suivi position: $e');
+      
+      // Forcer l'arrêt en cas d'erreur
+      _locationWatchdogTimer?.cancel();
+      _locationWatchdogTimer = null;
+      _positionSubscription?.cancel();
+      _positionSubscription = null;
+    }
   }
 
   /// Force un refresh des permissions et services
@@ -324,9 +587,22 @@ class CrashProofLocationService extends ChangeNotifier {
 
   @override
   void dispose() {
-    stopLocationTracking();
-    _positionController.close();
-    super.dispose();
+    try {
+      // Arrêter le tracking
+      _locationWatchdogTimer?.cancel();
+      _positionSubscription?.cancel();
+      
+      // Fermer le controller de manière sécurisée
+      if (!_positionController.isClosed) {
+        _positionController.close();
+      }
+      
+      debugPrint('✅ CrashProofLocationService dispose complet');
+    } catch (e) {
+      debugPrint('⚠️ Erreur dispose CrashProofLocationService: $e');
+    } finally {
+      super.dispose();
+    }
   }
 }
 

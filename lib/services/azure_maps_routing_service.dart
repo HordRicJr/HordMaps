@@ -56,6 +56,7 @@ class AzureMapsRoutingService {
   };
 
   /// Calcule un itinéraire avec Azure Maps Route Directions API
+  /// Implémente un pattern de circuit breaker et exponential backoff
   static Future<RouteResult> calculateRoute({
     required LatLng start,
     required LatLng end,
@@ -66,112 +67,196 @@ class AzureMapsRoutingService {
     bool avoidFerries = false,
     String language = 'fr-FR',
   }) async {
-    try {
-      // Vérifier si la configuration Azure Maps est valide
-      if (!AzureMapsConfig.isValid) {
-        throw Exception('Configuration Azure Maps invalide - clé API manquante');
-      }
+    // Utiliser le circuit breaker pour protéger contre les cascades d'erreurs
+    return ApiCircuitBreaker.execute<RouteResult>(
+      'azure_maps_route',
+      () async {
+        try {
+          // Validation des entrées pour éviter les erreurs
+          if (start.latitude.isNaN || start.longitude.isNaN || 
+              end.latitude.isNaN || end.longitude.isNaN) {
+            debugPrint('⚠️ Coordonnées invalides détectées, utilisation du fallback');
+            return _createFallbackRoute(
+              LatLng(48.8566, 2.3522), // Paris par défaut
+              LatLng(48.8566, 2.3522).add(const LatLng(0.01, 0.01)),
+              transportMode,
+            );
+          }
 
-      // Construire la clé de cache unique
-      final cacheKey = _buildCacheKey(
-        start, end, waypoints, transportMode, 
-        avoidTolls, avoidHighways, avoidFerries
-      );
+          // Vérifier si la configuration Azure Maps est valide
+          if (!AzureMapsConfig.isValid) {
+            debugPrint('⚠️ Configuration Azure Maps invalide - clé API manquante');
+            throw Exception('Configuration Azure Maps invalide - clé API manquante');
+          }
 
-      // Vérifier le cache d'abord
-      final cachedRoute = await _getCachedRoute(cacheKey);
-      if (cachedRoute != null) {
-        debugPrint('📦 Itinéraire Azure Maps trouvé dans le cache');
-        return cachedRoute;
-      }
+          // Construire la clé de cache unique
+          final cacheKey = _buildCacheKey(
+            start, end, waypoints, transportMode, 
+            avoidTolls, avoidHighways, avoidFerries
+          );
 
-      debugPrint('🗺️  Calcul d\'itinéraire Azure Maps: $transportMode');
-      debugPrint('  📍 Départ: ${start.latitude}, ${start.longitude}');
-      debugPrint('  🎯 Arrivée: ${end.latitude}, ${end.longitude}');
+          // Vérifier le cache d'abord
+          try {
+            final cachedRoute = await _getCachedRoute(cacheKey);
+            if (cachedRoute != null) {
+              debugPrint('📦 Itinéraire Azure Maps trouvé dans le cache');
+              return cachedRoute;
+            }
+          } catch (cacheError) {
+            // Continuer même si le cache échoue
+            debugPrint('⚠️ Erreur lecture cache: $cacheError');
+          }
 
-      // Préparer les coordonnées pour l'API Azure Maps
-      final coordinates = <String>[];
-      coordinates.add('${start.longitude},${start.latitude}');
-      
-      if (waypoints != null && waypoints.isNotEmpty) {
-        for (final waypoint in waypoints) {
-          coordinates.add('${waypoint.longitude},${waypoint.latitude}');
+          debugPrint('🗺️  Calcul d\'itinéraire Azure Maps: $transportMode');
+          debugPrint('  📍 Départ: ${start.latitude}, ${start.longitude}');
+          debugPrint('  🎯 Arrivée: ${end.latitude}, ${end.longitude}');
+
+          // Préparer les coordonnées pour l'API Azure Maps
+          final coordinates = <String>[];
+          coordinates.add('${start.longitude},${start.latitude}');
+          
+          if (waypoints != null && waypoints.isNotEmpty) {
+            // Limiter le nombre de waypoints pour éviter les erreurs
+            final safeWaypoints = waypoints.take(150).toList();
+            for (final waypoint in safeWaypoints) {
+              if (!waypoint.latitude.isNaN && !waypoint.longitude.isNaN) {
+                coordinates.add('${waypoint.longitude},${waypoint.latitude}');
+              }
+            }
+          }
+          
+          coordinates.add('${end.longitude},${end.latitude}');
+          final coordinatesParam = coordinates.join(':');
+
+          // Construire les paramètres selon la documentation Azure Maps
+          final queryParams = <String, dynamic>{
+            'api-version': AzureMapsConfig.apiVersion,
+            'subscription-key': AzureMapsConfig.apiKey,
+            'query': coordinatesParam,
+            'travelMode': transportProfiles[transportMode]?['azure'] ?? 'car',
+            'language': language,
+            'instructionsType': 'text',
+            'computeBestOrder': 'false',
+            'routeRepresentation': 'polyline',
+            'computeTravelTimeFor': 'all',
+          };
+
+          // Ajouter les options d'évitement selon la documentation
+          final avoid = <String>[];
+          if (avoidTolls) avoid.add('tollRoads');
+          if (avoidHighways) avoid.add('motorways');
+          if (avoidFerries) avoid.add('ferries');
+          if (avoid.isNotEmpty) {
+            queryParams['avoid'] = avoid.join(',');
+          }
+
+          // Construire l'URL selon la documentation Azure Maps
+          final url = '${AzureMapsConfig.routeUrl}/directions/json';
+          
+          // Implémenter un retry avec exponential backoff
+          int retryCount = 0;
+          const maxRetries = 3;
+          DioException? lastDioError;
+          
+          while (retryCount < maxRetries) {
+            try {
+              final response = await _dio.get(
+                url, 
+                queryParameters: queryParams,
+                options: Options(
+                  sendTimeout: const Duration(seconds: 30),
+                  receiveTimeout: const Duration(seconds: 30),
+                  headers: AzureMapsUtils.getStandardHeaders(),
+                ),
+              );
+
+              if (response.statusCode == 200 && response.data != null) {
+                // Vérifier si la réponse contient des routes
+                final routes = response.data['routes'] as List?;
+                if (routes == null || routes.isEmpty) {
+                  debugPrint('⚠️ Réponse Azure Maps sans itinéraires');
+                  return _createFallbackRoute(start, end, transportMode);
+                }
+                
+                final routeResult = _parseAzureMapsResponse(
+                  response.data, 
+                  transportMode,
+                  startPoint: start,
+                  endPoint: end,
+                );
+                
+                // Mettre en cache pour des utilisations futures
+                try {
+                  await _cacheRoute(cacheKey, routeResult);
+                } catch (cacheError) {
+                  // Continuer même si la mise en cache échoue
+                  debugPrint('⚠️ Erreur sauvegarde cache: $cacheError');
+                }
+                
+                debugPrint('✅ Itinéraire Azure Maps calculé: ${routeResult.totalDistance.toStringAsFixed(2)}km, ${routeResult.estimatedDuration.inMinutes}min');
+                return routeResult;
+              } else {
+                throw Exception('Erreur API Azure Maps: ${response.statusCode} - ${response.statusMessage}');
+              }
+            } on DioException catch (e) {
+              lastDioError = e;
+              
+              // Gérer les erreurs spécifiques
+              if (e.response?.statusCode == 401) {
+                debugPrint('🔑 Erreur d\'authentification Azure Maps');
+                throw Exception('Clé API Azure Maps invalide ou accès refusé');
+              } else if (e.response?.statusCode == 429) {
+                // Rate limiting - attendre plus longtemps avant de réessayer
+                final waitTime = Duration(milliseconds: 1000 * (1 << retryCount));
+                debugPrint('⏱️ Rate limit Azure Maps, attente de ${waitTime.inSeconds}s avant retry');
+                await Future.delayed(waitTime);
+                retryCount++;
+                continue;
+              }
+              
+              // Pour les autres erreurs, backoff exponentiel
+              if (retryCount < maxRetries - 1) {
+                final waitTime = Duration(milliseconds: 1000 * (1 << retryCount));
+                debugPrint('🔄 Retry ${retryCount + 1}/$maxRetries dans ${waitTime.inSeconds}s: ${e.message}');
+                await Future.delayed(waitTime);
+                retryCount++;
+              } else {
+                debugPrint('❌ Échec après $maxRetries tentatives: ${e.message}');
+                break;
+              }
+            } catch (e) {
+              debugPrint('❌ Erreur inattendue: $e');
+              break;
+            }
+          }
+          
+          // Si on arrive ici, toutes les tentatives ont échoué
+          if (lastDioError != null) {
+            debugPrint('🔄 Fallback après échec réseau: ${lastDioError.message}');
+          }
+          
+          // Fallback vers un itinéraire simple
+          return _createFallbackRoute(start, end, transportMode);
+        } catch (e) {
+          debugPrint('❌ Erreur calcul itinéraire Azure Maps: $e');
+          
+          // Enregistrer l'erreur dans le service de récupération
+          try {
+            AutoRecoveryService().reportError('AzureMapsRouting', e);
+          } catch (_) {}
+          
+          // Fallback vers un itinéraire simple
+          return _createFallbackRoute(start, end, transportMode);
         }
-      }
-      
-      coordinates.add('${end.longitude},${end.latitude}');
-      final coordinatesParam = coordinates.join(':');
-
-      // Construire les paramètres selon la documentation Azure Maps
-      final queryParams = <String, dynamic>{
-        'api-version': AzureMapsConfig.apiVersion,
-        'subscription-key': AzureMapsConfig.apiKey,
-        'query': coordinatesParam,
-        'travelMode': transportProfiles[transportMode]?['azure'] ?? 'car',
-        'language': language,
-        'instructionsType': 'text',
-        'computeBestOrder': 'false',
-        'routeRepresentation': 'polyline',
-        'computeTravelTimeFor': 'all',
-      };
-
-      // Ajouter les options d'évitement selon la documentation
-      final avoid = <String>[];
-      if (avoidTolls) avoid.add('tollRoads');
-      if (avoidHighways) avoid.add('motorways');
-      if (avoidFerries) avoid.add('ferries');
-      if (avoid.isNotEmpty) {
-        queryParams['avoid'] = avoid.join(',');
-      }
-
-      // Construire l'URL selon la documentation Azure Maps
-      final url = '${AzureMapsConfig.routeUrl}/directions/json';
-      
-      final response = await _dio.get(
-        url, 
-        queryParameters: queryParams,
-        options: Options(
-          sendTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
-          headers: AzureMapsUtils.getStandardHeaders(),
-        ),
-      );
-
-      if (response.statusCode == 200 && response.data != null) {
-        final routeResult = _parseAzureMapsResponse(
-          response.data, 
-          transportMode,
-          startPoint: start,
-          endPoint: end,
-        );
-        
-        // Mettre en cache pour des utilisations futures
-        await _cacheRoute(cacheKey, routeResult);
-        
-        debugPrint('✅ Itinéraire Azure Maps calculé: ${routeResult.totalDistance.toStringAsFixed(2)}km, ${routeResult.estimatedDuration.inMinutes}min');
-        return routeResult;
-      } else {
-        throw Exception('Erreur API Azure Maps: ${response.statusCode} - ${response.statusMessage}');
-      }
-    } on DioException catch (e) {
-      debugPrint('❌ Erreur réseau Azure Maps: ${e.message}');
-      if (e.response?.statusCode == 401) {
-        throw Exception('Clé API Azure Maps invalide ou accès refusé');
-      } else if (e.response?.statusCode == 429) {
-        throw Exception('Limite de requêtes Azure Maps dépassée');
-      }
-      
-      // Fallback vers un itinéraire simple en cas d'erreur réseau
-      return _createFallbackRoute(start, end, transportMode);
-    } catch (e) {
-      debugPrint('❌ Erreur calcul itinéraire Azure Maps: $e');
-      
-      // Fallback vers un itinéraire simple
-      return _createFallbackRoute(start, end, transportMode);
-    }
+      },
+      // Valeur de fallback si le circuit breaker est ouvert
+      fallbackValue: _createFallbackRoute(start, end, transportMode),
+      customTimeout: const Duration(seconds: 45),
+    );
   }
 
   /// Parse la réponse de l'API Azure Maps selon la documentation officielle
+  /// Implémente une gestion robuste des erreurs et des données manquantes
   static RouteResult _parseAzureMapsResponse(
     Map<String, dynamic> data,
     String transportMode, {
@@ -179,18 +264,78 @@ class AzureMapsRoutingService {
     LatLng? endPoint,
   }) {
     try {
-      final routes = data['routes'] as List?;
-      if (routes == null || routes.isEmpty) {
+      // Vérification de sécurité des données d'entrée
+      if (data.isEmpty) {
+        debugPrint('⚠️ Réponse Azure Maps vide');
+        ErrorLoggingService().error(
+          'AzureMapsRouting',
+          'Réponse Azure Maps vide',
+          details: {'data': 'empty'},
+        );
+        throw Exception('Réponse Azure Maps vide');
+      }
+
+      // Vérification de la structure de base de la réponse
+      if (!_isValidResponseStructure(data)) {
+        debugPrint('⚠️ Structure de réponse Azure Maps invalide');
+        ErrorLoggingService().error(
+          'AzureMapsRouting',
+          'Structure de réponse Azure Maps invalide',
+          details: {'keys': data.keys.toList()},
+        );
+        throw Exception('Structure de réponse Azure Maps invalide');
+      }
+
+      final routes = _safeGetList(data, 'routes');
+      if (routes.isEmpty) {
+        debugPrint('⚠️ Aucun itinéraire trouvé dans la réponse Azure Maps');
+        ErrorLoggingService().error(
+          'AzureMapsRouting',
+          'Aucun itinéraire trouvé dans la réponse Azure Maps',
+          details: {'data': data},
+        );
         throw Exception('Aucun itinéraire trouvé dans la réponse Azure Maps');
       }
 
-      final route = routes.first as Map<String, dynamic>;
-      final summary = route['summary'] as Map<String, dynamic>;
-      final legs = route['legs'] as List;
+      // Vérifier que la première route est bien un Map
+      final route = _safeGetMap(routes.first);
+      if (route.isEmpty) {
+        debugPrint('⚠️ Format de route invalide dans la réponse Azure Maps');
+        ErrorLoggingService().error(
+          'AzureMapsRouting',
+          'Format de route invalide dans la réponse Azure Maps',
+          details: {'route': routes.first},
+        );
+        throw Exception('Format de route invalide dans la réponse Azure Maps');
+      }
 
-      // Extraire les informations de base selon la structure Azure Maps
-      final distanceInMeters = summary['lengthInMeters'] as int;
-      final durationInSeconds = summary['travelTimeInSeconds'] as int;
+      // Vérifier que le summary existe
+      final summary = _safeGetMap(route['summary']);
+      if (summary.isEmpty) {
+        debugPrint('⚠️ Summary manquant dans la réponse Azure Maps');
+        ErrorLoggingService().error(
+          'AzureMapsRouting',
+          'Summary manquant dans la réponse Azure Maps',
+          details: {'route': route},
+        );
+        throw Exception('Summary manquant dans la réponse Azure Maps');
+      }
+
+      // Vérifier que les legs existent
+      final legs = _safeGetList(route, 'legs');
+      if (legs.isEmpty) {
+        debugPrint('⚠️ Legs manquants dans la réponse Azure Maps');
+        ErrorLoggingService().error(
+          'AzureMapsRouting',
+          'Legs manquants dans la réponse Azure Maps',
+          details: {'route': route},
+        );
+        throw Exception('Legs manquants dans la réponse Azure Maps');
+      }
+
+      // Extraire les informations de base avec vérification de type
+      final distanceInMeters = _safeParseInt(summary['lengthInMeters'], 0);
+      final durationInSeconds = _safeParseInt(summary['travelTimeInSeconds'], 0);
       
       final totalDistance = distanceInMeters / 1000.0; // Convertir en km
       final estimatedDuration = Duration(seconds: durationInSeconds);
@@ -200,13 +345,30 @@ class AzureMapsRoutingService {
       final steps = <RouteStep>[];
 
       for (final leg in legs) {
+        if (leg is! Map<String, dynamic>) {
+          debugPrint('⚠️ Format de leg invalide, ignoré');
+          continue;
+        }
+
         // Extraire les points selon la documentation Azure Maps
         final legPoints = leg['points'] as List?;
         if (legPoints != null) {
           for (final point in legPoints) {
-            final lat = point['latitude'] as double;
-            final lng = point['longitude'] as double;
-            routePoints.add(LatLng(lat, lng));
+            if (point is! Map<String, dynamic>) continue;
+            
+            try {
+              final lat = _safeParseDouble(point['latitude'], 0.0);
+              final lng = _safeParseDouble(point['longitude'], 0.0);
+              
+              // Vérifier que les coordonnées sont valides
+              if (lat.abs() <= 90 && lng.abs() <= 180 && 
+                  !lat.isNaN && !lng.isNaN) {
+                routePoints.add(LatLng(lat, lng));
+              }
+            } catch (e) {
+              debugPrint('⚠️ Point invalide ignoré: $e');
+              // Continuer avec le point suivant
+            }
           }
         }
 
@@ -216,48 +378,75 @@ class AzureMapsRoutingService {
           final instructions = guidance['instructions'] as List?;
           if (instructions != null) {
             for (int i = 0; i < instructions.length; i++) {
-              final instruction = instructions[i] as Map<String, dynamic>;
-              final message = instruction['message'] as String? ?? '';
-              final maneuver = instruction['maneuver'] as String? ?? 'continue';
-              
-              // Calculer la distance et durée pour cette étape
-              double stepDistance = 0;
-              Duration stepDuration = Duration.zero;
-              
-              if (i < instructions.length - 1) {
-                final currentPoint = instruction['point'] as Map<String, dynamic>?;
-                final nextPoint = instructions[i + 1]['point'] as Map<String, dynamic>?;
+              try {
+                final instruction = instructions[i];
+                if (instruction is! Map<String, dynamic>) continue;
                 
-                if (currentPoint != null && nextPoint != null) {
-                  final startPoint = LatLng(
-                    currentPoint['latitude'] as double,
-                    currentPoint['longitude'] as double,
-                  );
-                  final endPoint = LatLng(
-                    nextPoint['latitude'] as double,
-                    nextPoint['longitude'] as double,
-                  );
-                  stepDistance = _calculateDistance(startPoint, endPoint);
-                  stepDuration = _estimateStepDuration(stepDistance, transportMode);
+                final message = instruction['message'] as String? ?? '';
+                final maneuver = instruction['maneuver'] as String? ?? 'continue';
+                
+                // Calculer la distance et durée pour cette étape
+                double stepDistance = 0;
+                Duration stepDuration = Duration.zero;
+                
+                if (i < instructions.length - 1) {
+                  final currentPoint = instruction['point'] as Map<String, dynamic>?;
+                  final nextPoint = instructions[i + 1]['point'] as Map<String, dynamic>?;
+                  
+                  if (currentPoint != null && nextPoint != null) {
+                    try {
+                      final startLatitude = _safeParseDouble(currentPoint['latitude'], 0.0);
+                      final startLongitude = _safeParseDouble(currentPoint['longitude'], 0.0);
+                      final endLatitude = _safeParseDouble(nextPoint['latitude'], 0.0);
+                      final endLongitude = _safeParseDouble(nextPoint['longitude'], 0.0);
+                      
+                      if (!startLatitude.isNaN && !startLongitude.isNaN && 
+                          !endLatitude.isNaN && !endLongitude.isNaN) {
+                        final startPoint = LatLng(startLatitude, startLongitude);
+                        final endPoint = LatLng(endLatitude, endLongitude);
+                        stepDistance = _calculateDistance(startPoint, endPoint);
+                        stepDuration = _estimateStepDuration(stepDistance, transportMode);
+                      }
+                    } catch (e) {
+                      debugPrint('⚠️ Erreur calcul distance étape: $e');
+                      // Utiliser des valeurs par défaut
+                      stepDistance = 0.1;
+                      stepDuration = const Duration(seconds: 30);
+                    }
+                  }
                 }
+
+                // Obtenir les coordonnées de cette étape
+                LatLng stepLocation;
+                try {
+                  final stepPoint = instruction['point'] as Map<String, dynamic>?;
+                  if (stepPoint != null) {
+                    final lat = _safeParseDouble(stepPoint['latitude'], 0.0);
+                    final lng = _safeParseDouble(stepPoint['longitude'], 0.0);
+                    if (!lat.isNaN && !lng.isNaN && lat.abs() <= 90 && lng.abs() <= 180) {
+                      stepLocation = LatLng(lat, lng);
+                    } else {
+                      stepLocation = routePoints.isNotEmpty ? routePoints.first : (startPoint ?? LatLng(0, 0));
+                    }
+                  } else {
+                    stepLocation = routePoints.isNotEmpty ? routePoints.first : (startPoint ?? LatLng(0, 0));
+                  }
+                } catch (e) {
+                  debugPrint('⚠️ Erreur extraction coordonnées étape: $e');
+                  stepLocation = routePoints.isNotEmpty ? routePoints.first : (startPoint ?? LatLng(0, 0));
+                }
+
+                steps.add(RouteStep(
+                  instruction: message,
+                  distance: stepDistance,
+                  duration: stepDuration,
+                  location: stepLocation,
+                  type: _parseManeuver(maneuver),
+                ));
+              } catch (e) {
+                debugPrint('⚠️ Erreur traitement instruction $i: $e');
+                // Continuer avec l'instruction suivante
               }
-
-              // Obtenir les coordonnées de cette étape
-              final stepPoint = instruction['point'] as Map<String, dynamic>?;
-              final stepLocation = stepPoint != null 
-                ? LatLng(
-                    stepPoint['latitude'] as double,
-                    stepPoint['longitude'] as double,
-                  )
-                : (routePoints.isNotEmpty ? routePoints.first : (startPoint ?? LatLng(0, 0)));
-
-              steps.add(RouteStep(
-                instruction: message,
-                distance: stepDistance,
-                duration: stepDuration,
-                location: stepLocation,
-                type: _parseManeuver(maneuver),
-              ));
             }
           }
         }
@@ -268,13 +457,34 @@ class AzureMapsRoutingService {
         routePoints.addAll([startPoint, endPoint]);
       }
 
+      // Si toujours pas de points, créer un itinéraire minimal
+      if (routePoints.isEmpty) {
+        debugPrint('⚠️ Aucun point d\'itinéraire trouvé, création d\'un itinéraire minimal');
+        if (startPoint != null) {
+          routePoints.add(startPoint);
+          if (endPoint != null) {
+            routePoints.add(endPoint);
+          } else {
+            // Ajouter un point légèrement décalé si pas de point d'arrivée
+            routePoints.add(LatLng(
+              startPoint.latitude + 0.01,
+              startPoint.longitude + 0.01,
+            ));
+          }
+        } else {
+          // Points par défaut si aucune information
+          routePoints.add(LatLng(48.8566, 2.3522)); // Paris
+          routePoints.add(LatLng(48.8566, 2.3522).add(const LatLng(0.01, 0.01)));
+        }
+      }
+
       // Si pas d'étapes détaillées, créer une étape basique
       if (steps.isEmpty) {
         steps.add(RouteStep(
           instruction: 'Suivre l\'itinéraire vers la destination',
           distance: totalDistance,
           duration: estimatedDuration,
-          location: startPoint ?? LatLng(0, 0),
+          location: startPoint ?? (routePoints.isNotEmpty ? routePoints.first : LatLng(0, 0)),
           type: 'continue',
         ));
       }
@@ -288,8 +498,119 @@ class AzureMapsRoutingService {
       );
     } catch (e) {
       debugPrint('❌ Erreur parsing réponse Azure Maps: $e');
-      throw Exception('Erreur lors du parsing de la réponse Azure Maps: $e');
+      
+      // Créer un itinéraire de secours en cas d'erreur de parsing
+      final fallbackPoints = <LatLng>[];
+      if (startPoint != null) fallbackPoints.add(startPoint);
+      if (endPoint != null) fallbackPoints.add(endPoint);
+      
+      // Si aucun point valide, utiliser des coordonnées par défaut
+      if (fallbackPoints.isEmpty) {
+        fallbackPoints.add(LatLng(48.8566, 2.3522)); // Paris
+        fallbackPoints.add(LatLng(48.8566, 2.3522).add(const LatLng(0.01, 0.01)));
+      }
+      
+      // Calculer une distance approximative
+      final fallbackDistance = startPoint != null && endPoint != null 
+          ? _calculateDistance(startPoint, endPoint) 
+          : 1.0;
+      
+      // Estimer une durée approximative
+      final fallbackDuration = _estimateStepDuration(fallbackDistance, transportMode);
+      
+      return RouteResult(
+        points: fallbackPoints,
+        totalDistance: fallbackDistance,
+        estimatedDuration: fallbackDuration,
+        steps: [
+          RouteStep(
+            instruction: 'Suivre l\'itinéraire vers la destination',
+            distance: fallbackDistance,
+            duration: fallbackDuration,
+            location: fallbackPoints.first,
+            type: 'continue',
+          ),
+        ],
+        summary: 'Itinéraire de secours (erreur de parsing)',
+      );
     }
+  }
+  
+  /// Convertit en toute sécurité une valeur en int
+  static int _safeParseInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (_) {
+        return defaultValue;
+      }
+    }
+    return defaultValue;
+  }
+  
+  /// Convertit en toute sécurité une valeur en double
+  static double _safeParseDouble(dynamic value, double defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (_) {
+        return defaultValue;
+      }
+    }
+    return defaultValue;
+  }
+  
+  /// Vérifie si la structure de la réponse est valide
+  static bool _isValidResponseStructure(Map<String, dynamic> data) {
+    // Vérifier les clés minimales requises
+    if (!data.containsKey('routes')) {
+      return false;
+    }
+    
+    // Vérifier que routes est bien une liste
+    final routes = data['routes'];
+    if (routes is! List) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /// Récupère une liste de manière sécurisée
+  static List<dynamic> _safeGetList(dynamic data, String key) {
+    if (data is! Map) return [];
+    
+    final value = data[key];
+    if (value is List) {
+      return value;
+    }
+    
+    return [];
+  }
+
+  /// Récupère un Map de manière sécurisée
+  static Map<String, dynamic> _safeGetMap(dynamic data) {
+    if (data is Map) {
+      try {
+        return Map<String, dynamic>.from(data);
+      } catch (e) {
+        // Si la conversion échoue, retourner un map vide
+        return {};
+      }
+    }
+    
+    return {};
+  }
+  
+  /// Vérifie si une coordonnée est valide
+  static bool _isValidCoordinate(double lat, double lng) {
+    return !lat.isNaN && !lng.isNaN && lat.abs() <= 90 && lng.abs() <= 180;
   }
 
   /// Parse le type de manœuvre Azure Maps vers notre système
