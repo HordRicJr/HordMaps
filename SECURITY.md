@@ -20,7 +20,7 @@ If you discover a vulnerability in HordMaps, please report it responsibly so we 
 1. **GitHub Security Advisories**: Open a private Security Advisory in this repository.
 2. **Email:** [security@hordmaps.example](mailto:security@hordmaps.example) *(replace with your actual security contact email)*
 
-> ⚠️ Do **not** post exploit code in public issues. Use the channels above to report vulnerabilities safely.
+>  Do **not** post exploit code in public issues. Use the channels above to report vulnerabilities safely.
 
 **Include the following in your report:**
 
